@@ -23,6 +23,13 @@ namespace LiteFigure
   {
     virtual FigureType getType() const = 0;
 
+    // calculates and returns the size of the figure, also sets size variable
+    // if force_size is not -1,-1, it will be used to change the size of the 
+    // figure and all it's children accordingly. 
+    // Even in this case returned size might be different from force_size
+    // due to rounding errors or other constaints
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) = 0;
+
     int2   size = int2(-1,-1);
   };
   using FigurePtr = std::shared_ptr<Figure>;
@@ -30,20 +37,22 @@ namespace LiteFigure
   struct Grid : public Figure
   {
     FigureType getType() const override { return FigureType::Grid; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
 
-    std::vector<std::vector<FigurePtr>> figures;
+    std::vector<std::vector<FigurePtr>> rows;
   };
 
   struct Collage : public Figure
   {
     struct Element
     {
-      float2  pos_rel = float2(0,0);
-      float2 size_rel = float2(1,1);
+      int2 pos  = int2(0,0);
+      int2 size = int2(-1,-1);
       FigurePtr figure;
     };
 
     FigureType getType() const override { return FigureType::Collage; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
 
     std::vector<Element> elements;
   };
@@ -51,6 +60,7 @@ namespace LiteFigure
   struct Transform : public Figure
   {
     FigureType getType() const override { return FigureType::Transform; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
 
     FigurePtr figure;
     float4 crop  = float4(0,0,1,1);
@@ -60,6 +70,12 @@ namespace LiteFigure
   struct Primitive : public Figure
   {
     virtual FigureType getType() const = 0;
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override
+    {
+      if (force_size.x > 0 && force_size.y > 0)
+        size = force_size;
+      return size;
+    }
   };
 
   struct PrimitiveImage : public Primitive

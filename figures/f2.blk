@@ -1,0 +1,22 @@
+{
+  type:e_FigureType = Collage
+  size:i2 = 1024, 1024
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveImage
+    path:s = "images/block_1.png"
+  }
+  elem {
+    pos:i2 = 100, 100
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveImage
+    path:s = "images/block_2.png"    
+  }
+  elem {
+    pos:i2 = 200, 200
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveFill
+    color:p4 = 0.5, 0.2, 0, 0.667   
+  }
+}
