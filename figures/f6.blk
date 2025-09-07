@@ -1,0 +1,73 @@
+{
+  type:e_FigureType = Collage
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveImage
+    path:s = "images/block_1.png"
+  }
+  elem {
+    pos:i2 = 100, 100
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveImage
+    path:s = "images/block_2.png"    
+  }
+  elem {
+    pos:i2 = 200, 200
+    size:i2 = 256, 256
+    type:e_FigureType = PrimitiveFill
+    color:p4 = 0.5, 0.2, 0, 0.667   
+  }
+  elem
+  {
+    type:e_FigureType = Grid
+    pos:i2 = 400, 100
+    size:i2 = 600, 400
+    row {
+      elem {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/block_1.png"
+      }
+      elem {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/block_2.png"
+      }
+      elem {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/block_3.png"
+      }
+    }
+    row {
+      elem {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/block_4.png"
+      }
+      elem {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/block_5.png"
+      }
+      elem {
+        type:e_FigureType = Collage
+        size:i2 = 48, 48
+        elem {
+          pos:i2 = 0, 0
+          size:i2 = 256, 256
+          type:e_FigureType = PrimitiveImage
+          path:s = "images/block_1.png"
+        }
+        elem {
+          pos:i2 = 100, 100
+          size:i2 = 256, 256
+          type:e_FigureType = PrimitiveImage
+          path:s = "images/block_2.png"    
+        }
+        elem {
+          pos:i2 = 200, 200
+          size:i2 = 256, 256
+          type:e_FigureType = PrimitiveFill
+          color:p4 = 0.5, 0.2, 0, 0.667   
+        }
+      }
+    }
+  }
+}
