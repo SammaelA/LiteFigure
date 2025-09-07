@@ -1,7 +1,5 @@
 {
-  image
-  {
-    path:s = "../images/block_1.png"
-    size:i2 = 1024, 1024
-  }
+  type:e_FigureType = PrimitiveImage
+  path:s = "images/block_1.png"
+  size:i2 = 1024, 1024
 }

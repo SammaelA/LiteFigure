@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-option(USE_STB_IMAGE "Enable STB image " ON)
+add_definitions(-DUSE_STB_IMAGE)
 
 # Compiler flags for Debug/Release
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
