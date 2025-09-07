@@ -1,0 +1,3 @@
+[submodule "src/1st-party/LiteMath"]
+	path = src/1st-party/LiteMath
+	url = https://github.com/msu-graphics-group/LiteMath

@@ -1,0 +1,7 @@
+{
+  image
+  {
+    path:s = "../images/block_1.png"
+    size:i2 = 1024, 1024
+  }
+}
