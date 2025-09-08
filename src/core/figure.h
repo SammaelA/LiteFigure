@@ -98,6 +98,7 @@ namespace LiteFigure
     std::shared_ptr<Primitive> prim;
     int2 pos  = int2(0,0);
     int2 size = int2(-1,-1);
+    LiteMath::float3x3 uv_transform = LiteMath::float3x3();
   };
 
 

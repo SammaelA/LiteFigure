@@ -1,0 +1,37 @@
+{
+  type:e_FigureType = Collage
+  size:i2 = 500, 400
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 64, 256
+    type:e_FigureType = Transform
+    crop:p4 = 0,0, 0.25, 1
+    figure
+    {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_1.png"
+    }
+  }
+  elem {
+    pos:i2 = 128, 0
+    size:i2 = 64, 256
+    type:e_FigureType = Transform
+    crop:p4 = 0.25,0, 0.5, 1
+    figure
+    {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_1.png"
+    }    
+  }
+  elem {
+    pos:i2 = 256, 0
+    size:i2 = 64, 256
+    type:e_FigureType = Transform
+    crop:p4 = 0.5,0, 0.75, 1
+    figure
+    {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_1.png"
+    }  
+  }
+}

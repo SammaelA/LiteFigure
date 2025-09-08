@@ -35,7 +35,7 @@ namespace LiteFigure
   int2 Collage::calculateSize(int2 force_size)
   {
     // external force_size has highest priority, but if 
-    // collage size is explicitly set, it is forced to children
+    // figure size is explicitly set, it is forced to children
     if (!is_valid_size(force_size) && is_valid_size(size))
       force_size = size;
 
@@ -69,7 +69,7 @@ namespace LiteFigure
   int2 Grid::calculateSize(int2 force_size)
   {
     // external force_size has highest priority, but if 
-    // collage size is explicitly set, it is forced to children
+    // figure size is explicitly set, it is forced to children
     if (!is_valid_size(force_size) && is_valid_size(size))
       force_size = size;
 
@@ -121,6 +121,15 @@ namespace LiteFigure
 
   int2 Transform::calculateSize(int2 force_size)
   {
+    // external force_size has highest priority, but if 
+    // figure size is explicitly set, it is forced to children
+    if (!is_valid_size(force_size) && is_valid_size(size))
+      force_size = size;
+
+    if (!is_valid_size(force_size))
+      force_size = int2(scale * float2(crop.z-crop.x, crop.w-crop.y) * float2(figure->calculateSize()));
+
+    size = figure->calculateSize(force_size);
     return size;
   }
 
@@ -159,6 +168,35 @@ namespace LiteFigure
         cur_pos.y += row_height;
       }
     }
+    else if (dynamic_cast<Transform*>(figure.get()))
+    {
+      Transform *transform = dynamic_cast<Transform*>(figure.get());
+
+      auto child_type = transform->figure->getType();
+      if (child_type == FigureType::PrimitiveImage || child_type == FigureType::Transform)
+      {
+        float3x3 crop_trans;
+        {
+          float x0 = transform->crop.x;
+          float y0 = transform->crop.y;
+          float x1 = transform->crop.z;
+          float y1 = transform->crop.w;
+          crop_trans = float3x3(x1-x0, 0, x0,  0, y1-y0, y0, 0, 0, 1);
+        }
+        std::vector<Instance> instances_to_transform;
+        prepare_instances_rec(transform->figure, pos, instances_to_transform);
+        for (auto &inst : instances_to_transform)
+        {
+          inst.uv_transform = crop_trans * inst.uv_transform;
+          instances.push_back(inst);
+        }
+      }
+      else
+      {
+        printf("[Transform::prepare_instances] only PrimitiveImage can be transformed now\n");
+        return;
+      }
+    }
   }
 
   std::vector<Instance> prepare_instances(FigurePtr figure)
@@ -181,15 +219,15 @@ namespace LiteFigure
     return r;
   }
 
-  void render_primitive_image(const PrimitiveImage &prim, int2 pos, int2 size, 
+  void render_primitive_image(const PrimitiveImage &prim, int2 pos, int2 size, const LiteMath::float3x3 &uv_transform, 
                               LiteImage::Image2D<float4> &out)
   {
     for (int y = 0; y < size.y; y++)
     {
       for (int x = 0; x < size.x; x++)
       {
-        float2 uv = float2(x/float(size.x), y/float(size.y));
-        float4 c = prim.image.sample(prim.sampler, uv);
+        float3 uv = uv_transform * float3(x/float(size.x), y/float(size.y), 1);
+        float4 c = prim.image.sample(prim.sampler, float2(uv.x, uv.y));
         out[uint2(x+pos.x, y+pos.y)] = alpha_blend(c, out[uint2(x+pos.x, y+pos.y)]);
       }
     }
@@ -213,7 +251,8 @@ namespace LiteFigure
     switch (inst.prim->getType())
     {
       case FigureType::PrimitiveImage:
-        render_primitive_image(*dynamic_cast<PrimitiveImage*>(inst.prim.get()), inst.pos, inst.size, out);
+        render_primitive_image(*dynamic_cast<PrimitiveImage*>(inst.prim.get()), inst.pos, inst.size, 
+                                                              inst.uv_transform, out);
         break;
       case FigureType::PrimitiveFill:
         render_primitive_fill(*dynamic_cast<PrimitiveFill*>(inst.prim.get()), inst.pos, inst.size, out);
@@ -339,6 +378,42 @@ namespace LiteFigure
     return grid;
   }
 
+  FigurePtr create_figure_transform(const Block *blk)
+  {
+    std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+    transform->size = blk->get_ivec2("size", transform->size);
+    transform->crop = blk->get_vec4("crop", transform->crop);
+    transform->scale = blk->get_vec2("scale", transform->scale);
+
+    int figure_block_id = -1;
+    for (int i = 0; i < blk->size(); i++)
+    {
+      Block *fig_blk = blk->get_block(i);
+      if (fig_blk)
+      {
+        if (figure_block_id == -1)
+          figure_block_id = i;
+        else
+        {
+          printf("[create_figure_transform] only one figure block allowed for transform\n");
+          return create_error_figure_dummy();
+        }
+      }
+    }
+
+    if (figure_block_id == -1)
+    {
+      printf("[create_figure_transform] transform must contain block with figure\n");
+      return create_error_figure_dummy(); 
+    }
+    else
+    {
+      transform->figure = create_figure(blk->get_block(figure_block_id));
+    }
+
+    return transform;
+  }
+
   FigurePtr create_figure(const Block *blk)
   {
     switch ((FigureType)blk->get_enum("type", (unsigned)FigureType::Unknown))
@@ -354,8 +429,7 @@ namespace LiteFigure
         printf("[create_figure] unsupported figure type TemplateInstance\n");
         return create_error_figure_dummy();
       case FigureType::Transform:
-        printf("[create_figure] unsupported figure type Transform\n");
-        return create_error_figure_dummy();
+        return create_figure_transform(blk);
       case FigureType::PrimitiveImage:
         return create_figure_primitive_image(blk);
       case FigureType::PrimitiveFill:
