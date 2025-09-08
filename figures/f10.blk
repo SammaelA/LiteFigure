@@ -1,0 +1,65 @@
+{
+  templates {
+    grid_with_details {
+      __params:arr = {"__image"}
+      type:e_FigureType = Grid
+      size:i2 = 600, 400
+      row {
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0,0,1,1
+          scale:p2 = 1,1
+          __image { }
+        }
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0,0, 0.5, 0.5
+          scale:p2 = 2,2
+          __image { }
+        }
+      }
+      row {
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0, 1, 0.5
+          scale:p2 = 2,2
+          __image { }
+        }
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0.5, 1, 1
+          scale:p2 = 2,2
+          __image { }
+        }
+      }
+    }
+  }
+
+  figure {
+    type:e_FigureType = Grid
+    size:i2 = 2048, 1024
+    row {
+      elem {
+        pos:i2 = 0, 0
+        size:i2 = 1024, 1024
+        is_template:tag
+        template_name:s = "grid_with_details"
+        __image {
+          type:e_FigureType = PrimitiveImage
+          path:s = "images/block_1.png"
+        }
+      }
+      elem {
+        pos:i2 = 1024, 0
+        size:i2 = 1024, 1024
+        type:e_FigureType = PrimitiveImage
+        is_template:tag
+        template_name:s = "grid_with_details"
+        __image {
+          type:e_FigureType = PrimitiveImage
+          path:s = "images/block_2.png"
+        } 
+      }
+    }
+  }
+}
