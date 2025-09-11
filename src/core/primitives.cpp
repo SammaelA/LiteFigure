@@ -46,4 +46,42 @@ namespace LiteFigure
 
     return true;
   }
+
+  bool Line::load(const Block *blk)
+  {
+    std::shared_ptr<Line> prim = std::make_shared<Line>();
+    size = blk->get_ivec2("size", size);
+    color = blk->get_vec4("color", color);
+    thickness = blk->get_double("thickness", thickness);
+    start = blk->get_vec2("start", start);
+    end = blk->get_vec2("end", end);
+    antialiased = blk->get_bool("antialiased", antialiased);
+
+    if (size.x < 1 || size.y < 1)
+    {
+      printf("[Line::load] size must be explicitly declared\n");
+      return false;
+    }
+
+    return true;
+  }
+
+  bool Circle::load(const Block *blk)
+  {
+    std::shared_ptr<Circle> prim = std::make_shared<Circle>();
+    size = blk->get_ivec2("size", size);
+    color = blk->get_vec4("color", color);
+    radius = blk->get_double("radius", radius);
+    center = blk->get_vec2("center", center);
+    antialiased = blk->get_bool("antialiased", antialiased);
+
+    if (size.x < 1 || size.y < 1)
+    {
+      printf("[Circle::load] size must be explicitly declared\n");
+      return false;
+    }
+
+    return true;
+  }
+  
 }

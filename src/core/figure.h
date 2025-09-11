@@ -15,7 +15,9 @@ namespace LiteFigure
     Collage,
     Transform,
     PrimitiveImage,
-    PrimitiveFill
+    PrimitiveFill,
+    Line,
+    Circle
   };
   
   struct Figure
@@ -117,6 +119,33 @@ namespace LiteFigure
     virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     float4 color = float4(1,0,0,1);
+  };
+
+  struct Line : public Primitive, public IRenderable
+  {
+    virtual FigureType getType() const override { return FigureType::Line; }
+    virtual bool load(const Block *blk) override;
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
+
+    float4 color = float4(0,0,0,1);
+    // start, end and thickness are in normalized coordinates (0..1)
+    float2 start = float2(0,0);
+    float2 end = float2(1,1);
+    float thickness = 0.01f;
+    bool antialiased = true;
+  };
+
+  struct Circle : public Primitive, public IRenderable
+  {
+    virtual FigureType getType() const override { return FigureType::Circle; }
+    virtual bool load(const Block *blk) override;
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
+
+    float4 color = float4(0,0,0,1);
+    // center and radius are in normalized coordinates (0..1)
+    float2 center = float2(0.5f,0.5f);
+    float radius = 0.25f;
+    bool antialiased = true;
   };
 
   void create_and_save_figure(const Block &blk, const std::string &filename);

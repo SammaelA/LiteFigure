@@ -1,0 +1,38 @@
+{
+  type:e_FigureType = Grid
+  size:i2 = 1024, 1024
+
+  row {
+  elem {
+    size:i2 = 1024, 1024
+    type:e_FigureType = PrimitiveImage
+    path:s = "images/block_5.png"
+  }
+  elem {
+    size:i2 = 1024, 1024
+    color:p4 = 1,0,0,1
+    start:p2 = 0,1
+    end:p2 = 1,0
+    thickness:r = 0.01
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+  }
+  row {
+  elem {
+    size:i2 = 1024, 1024
+    color:p4 = 0,1,0,1
+    start:p2 = 0.1,0.2
+    end:p2 = 0.8,0.9
+    thickness:r = 0.02
+    type:e_FigureType = Line   
+  }
+  elem {
+    size:i2 = 1024, 1024
+    color:p4 = 1,0.4,0,1
+    center:p2 = 0.5, 0.2
+    radius:r = 0.1
+    type:e_FigureType = Circle  
+  }
+  }
+}

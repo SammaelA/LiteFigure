@@ -13,6 +13,8 @@ namespace LiteFigure
                        {"Transform", (unsigned)FigureType::Transform},
                        {"PrimitiveImage", (unsigned)FigureType::PrimitiveImage},
                        {"PrimitiveFill", (unsigned)FigureType::PrimitiveFill},
+                       {"Line", (unsigned)FigureType::Line},
+                       {"Circle", (unsigned)FigureType::Circle},
                    }; })());
 
   bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
@@ -49,6 +51,12 @@ namespace LiteFigure
       break;
     case FigureType::PrimitiveFill:
       fig = std::make_shared<PrimitiveFill>();
+      break;
+    case FigureType::Line:
+      fig = std::make_shared<Line>();
+      break;
+    case FigureType::Circle:
+      fig = std::make_shared<Circle>();
       break;
     default:
       printf("[create_figure] unsupported figure type %d\n", (int)blk->get_enum("type", (unsigned)FigureType::Unknown));
