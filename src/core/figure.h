@@ -13,7 +13,6 @@ namespace LiteFigure
     Unknown,
     Grid,
     Collage,
-    TemplateInstance,
     Transform,
     PrimitiveImage,
     PrimitiveFill
@@ -21,6 +20,7 @@ namespace LiteFigure
   
   struct Figure
   {
+    virtual ~Figure() = default;
     virtual FigureType getType() const = 0;
 
     // calculates and returns the size of the figure, also sets size variable
@@ -30,14 +30,45 @@ namespace LiteFigure
     // due to rounding errors or other constaints
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) = 0;
 
-    int2   size = int2(-1,-1);
+    // loads figure data from blk, returns true on success
+    virtual bool load(const Block *blk) = 0;
+    int2 size = int2(-1,-1);
   };
   using FigurePtr = std::shared_ptr<Figure>;
 
+  struct Primitive : public Figure
+  {
+    virtual FigureType getType() const = 0;
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override
+    {
+      if (force_size.x > 0 && force_size.y > 0)
+        size = force_size;
+      return size;
+    }
+  };
+
+  struct InstanceData
+  {
+    int2 pos  = int2(0,0);
+    int2 size = int2(-1,-1);
+    LiteMath::float3x3 uv_transform = LiteMath::float3x3();
+  };
+  struct Instance
+  {
+    std::shared_ptr<Primitive> prim;
+    InstanceData data;
+  };
+
+  struct IRenderable
+  {
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const = 0;
+  };
+
   struct Grid : public Figure
   {
-    FigureType getType() const override { return FigureType::Grid; }
+    virtual FigureType getType() const override { return FigureType::Grid; }
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
 
     std::vector<std::vector<FigurePtr>> rows;
   };
@@ -51,56 +82,42 @@ namespace LiteFigure
       FigurePtr figure;
     };
 
-    FigureType getType() const override { return FigureType::Collage; }
+    virtual FigureType getType() const override { return FigureType::Collage; }
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
 
     std::vector<Element> elements;
   };
 
   struct Transform : public Figure
   {
-    FigureType getType() const override { return FigureType::Transform; }
+    virtual FigureType getType() const override { return FigureType::Transform; }
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
 
     FigurePtr figure;
     float4 crop  = float4(0,0,1,1);
     float2 scale = float2(1,1);
   };
 
-  struct Primitive : public Figure
+  struct PrimitiveImage : public Primitive, public IRenderable
   {
-    virtual FigureType getType() const = 0;
-    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override
-    {
-      if (force_size.x > 0 && force_size.y > 0)
-        size = force_size;
-      return size;
-    }
-  };
-
-  struct PrimitiveImage : public Primitive
-  {
-    FigureType getType() const override { return FigureType::PrimitiveImage; }
+    virtual FigureType getType() const override { return FigureType::PrimitiveImage; }
+    virtual bool load(const Block *blk) override;
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     LiteImage::Sampler sampler;
     LiteImage::Image2D<float4> image;
   };
 
-  struct PrimitiveFill : public Primitive
+  struct PrimitiveFill : public Primitive, public IRenderable
   {
-    FigureType getType() const override { return FigureType::PrimitiveFill; }
+    virtual FigureType getType() const override { return FigureType::PrimitiveFill; }
+    virtual bool load(const Block *blk) override;
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     float4 color = float4(1,0,0,1);
   };
-
-  struct Instance
-  {
-    std::shared_ptr<Primitive> prim;
-    int2 pos  = int2(0,0);
-    int2 size = int2(-1,-1);
-    LiteMath::float3x3 uv_transform = LiteMath::float3x3();
-  };
-
 
   void create_and_save_figure(const Block &blk, const std::string &filename);
 }
