@@ -87,8 +87,8 @@ namespace LiteFigure
     };
     struct Point
     {
-      float x;
-      float y;
+      int16_t x;
+      int16_t y;
       Flags flags;
     };
     
@@ -138,7 +138,7 @@ namespace LiteFigure
     glyph.contours.resize(number_of_contours);
 
     std::vector<uint16_t> endPtsOfContours(number_of_contours);
-    std::vector<uint16_t> instructions;
+    std::vector<uint8_t> instructions;
     for (int i = 0; i < number_of_contours; i++)
     {
       endPtsOfContours[i] = big_to_little_endian<uint16_t>(bytes + off);
@@ -150,24 +150,21 @@ namespace LiteFigure
     instructions.resize(instructions_cnt);
     for (int i = 0; i < instructions_cnt; i++)
     {
-      instructions[i] = big_to_little_endian<uint16_t>(bytes + off);
-      off += 2;
+      instructions[i] = bytes[off];
+      off++;
     }
 
-    uint32_t cur_contour = 0;
-    uint32_t cur_point_local = 0;
-    uint32_t cur_point = 0;
+    // filling flags
+    std::vector<TTFSimpleGlyph::Flags> flags(endPtsOfContours.back() + 1);
     uint32_t flags_skip = 0;
-    TTFSimpleGlyph::Point prev_point;
-    for (int cur_point = 0; cur_point < endPtsOfContours.back(); cur_point++)
+    for (int cur_point = 0; cur_point <= endPtsOfContours.back(); cur_point++)
     {
-      TTFSimpleGlyph::Point point;
       if (flags_skip == 0)
       {
-        point.flags = ((TTFSimpleGlyph::Flags *)bytes)[off];
+        flags[cur_point] = ((TTFSimpleGlyph::Flags *)bytes)[off];
         off++;
 
-        if (point.flags.repeat)
+        if (flags[cur_point].repeat)
         {
           flags_skip = bytes[off];
           off++;
@@ -175,38 +172,101 @@ namespace LiteFigure
       }
       else
       {
-        point.flags = prev_point.flags;
+        flags[cur_point] = flags[cur_point - 1];
         flags_skip--;
       }
+      printf("flags[%d] = %d %d %d %d %d %d\n", cur_point,
+        (int)flags[cur_point].on_curve,
+        (int)flags[cur_point].x_short_vector,
+        (int)flags[cur_point].y_short_vector,
+        (int)flags[cur_point].repeat,
+        (int)flags[cur_point].x_is_same,
+        (int)flags[cur_point].y_is_same);
+    }
 
+    //filling contours, no points here yet
+    uint32_t cur_contour = 0;
+    uint32_t cur_point_local = 0;
+    for (uint32_t cur_point = 0; cur_point <= endPtsOfContours.back(); cur_point++)
+    {
+      if (cur_point > endPtsOfContours[cur_contour])
+      {
+        cur_contour++;
+        cur_point_local = 0;
+      }
+      glyph.contours[cur_contour].points.push_back(TTFSimpleGlyph::Point());
+      glyph.contours[cur_contour].points[cur_point_local].flags = flags[cur_point];
+      cur_point_local++;
+    }
+
+    //filling point x coordinates
+    cur_contour = 0;
+    cur_point_local = 0;
+    int16_t coord_val = 0;
+    for (int cur_point = 0; cur_point <= endPtsOfContours.back(); cur_point++)
+    {
+      int16_t abs_x_shift = 0;
+      TTFSimpleGlyph::Point &point = glyph.contours[cur_contour].points[cur_point_local];
       if (point.flags.x_short_vector)
       {
-        uint8_t abs_x_shift = bytes[off];
+        abs_x_shift = int16_t(bytes[off]);
         off++;
-        point.x = prev_point.x + (point.flags.x_is_same ? 1.0f : -1.0f) * float(abs_x_shift);
+        coord_val += (point.flags.x_is_same ? 1 : -1) * int16_t(abs_x_shift);
       }
-      else
+      else if (!point.flags.x_is_same)
       {
-        uint16_t abs_x_shift = big_to_little_endian<int16_t>(bytes + off);
+        abs_x_shift = big_to_little_endian<int16_t>(bytes + off);
         off += 2;
-        point.x = point.flags.x_is_same ? prev_point.x : float(abs_x_shift);
+        coord_val += abs_x_shift;
       }
+      point.x = coord_val;
 
+      cur_point_local++;
+      if (cur_point == endPtsOfContours[cur_contour])
+      {
+        cur_contour++;
+        cur_point_local = 0;
+      }
+    }
+
+    //filling point y coordinates
+    cur_contour = 0;
+    cur_point_local = 0;
+    coord_val = 0;
+    for (int cur_point = 0; cur_point <= endPtsOfContours.back(); cur_point++)
+    {
+      int16_t abs_y_shift = 0;
+      TTFSimpleGlyph::Point &point = glyph.contours[cur_contour].points[cur_point_local];
       if (point.flags.y_short_vector)
       {
-        uint8_t abs_y_shift = bytes[off];
+        abs_y_shift = int16_t(bytes[off]);
         off++;
-        point.y = prev_point.y + (point.flags.y_is_same ? 1.0f : -1.0f) * float(abs_y_shift);
+        coord_val += (point.flags.y_is_same ? 1 : -1) * int16_t(abs_y_shift);
       }
-      else
+      else if (!point.flags.y_is_same)
       {
-        uint16_t abs_y_shift = big_to_little_endian<int16_t>(bytes + off);
+        abs_y_shift = big_to_little_endian<int16_t>(bytes + off);
         off += 2;
-        point.y = point.flags.y_is_same ? prev_point.y : float(abs_y_shift);
+        coord_val += abs_y_shift;
       }
+      point.y = coord_val;  
 
-      printf("point %d %f %f\n", cur_point, point.x, point.y);
-      prev_point = point;
+      cur_point_local++;
+      if (cur_point == endPtsOfContours[cur_contour])
+      {
+        cur_contour++;
+        cur_point_local = 0;
+      }
+    }
+
+    //print points
+    for (auto &c : glyph.contours)
+    {
+      for (auto &p : c.points)
+      {
+        printf("(%d,%d)%s ", (int)p.x, (int)p.y, p.flags.on_curve ? "o" : "x");
+      }
+      printf("\n");
     }
 
     return glyph;
