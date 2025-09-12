@@ -1,4 +1,5 @@
 #include "ttf_reader.h"
+#include "figure.h"
 #include <cstdint>
 #include <vector>
 #include <fstream>
@@ -326,6 +327,71 @@ namespace LiteFigure
     }
     return all_glyph_locations;
   }
+  
+  void debug_render_glyph_table(const std::vector<TTFSimpleGlyph> &all_glyphs)
+  {
+    std::shared_ptr<Grid> grid = std::make_shared<Grid>();
+    int glyphs_per_row = 16;
+    int rows = (all_glyphs.size() + glyphs_per_row - 1) / glyphs_per_row;
+    float glyph_scale = 0.5f;
+
+    grid->rows.resize(rows);
+    float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
+    for (int gId = 0; gId < all_glyphs.size(); gId++)
+    {
+      const TTFSimpleGlyph &glyph = all_glyphs[gId];
+      int row = gId / glyphs_per_row;
+      int col = gId % glyphs_per_row;
+      float2 sz = float2(1.1f*std::max(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin));
+
+      if (glyph.contours.size() == 0)
+      {
+        std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
+        fill->color = float4(1,0,1,1);
+        fill->size = int2(glyph_scale*sz);
+        grid->rows[row].push_back(fill);
+        continue;
+      }
+
+      std::shared_ptr<Collage> collage = std::make_shared<Collage>();
+      collage->size = int2(glyph_scale*sz);
+      printf("glyph %d size %d,%d\n", gId, (int)collage->size.x, (int)collage->size.y);
+      
+      for (int cId = 0; cId < glyph.contours.size(); cId++)
+      {
+        const TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
+        for (int pId = 0; pId < contour.points.size(); pId++)
+        {
+          const TTFSimpleGlyph::Point &p0 = contour.points[pId];
+          const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % contour.points.size()];
+          float2 p0f = float2(float(p0.x - glyph.xMin), float(p0.y - glyph.yMin)) / sz;
+          float2 p1f = float2(float(p1.x - glyph.xMin), float(p1.y - glyph.yMin)) / sz;
+          std::shared_ptr<Line> line = std::make_shared<Line>();
+          line->start = p0f;
+          line->end = p1f;
+          line->thickness = 0.01f;
+          line->color = colors[cId % 4];
+          collage->elements.emplace_back();
+          collage->elements.back().figure = line;
+          collage->elements.back().pos = int2(0,0);
+          collage->elements.back().size = collage->size;
+
+          std::shared_ptr<Circle> circle = std::make_shared<Circle>();
+          circle->center = p0f;
+          circle->radius = 0.01f;
+          circle->color = p0.flags.on_curve ? float4(1,0,0,1) : float4(0,0,1,1);
+          collage->elements.emplace_back();
+          collage->elements.back().figure = circle;
+          collage->elements.back().pos = int2(0,0);
+          collage->elements.back().size = collage->size;
+        }
+      }
+      grid->rows[row].push_back(collage);
+    }
+
+    auto image = render_figure_to_image(grid);
+    LiteImage::SaveImage("saves/glyphs.png", image);
+  }
 
   bool read_ttf_debug(const std::string &filename)
   {
@@ -420,6 +486,9 @@ namespace LiteFigure
       printf("read glyph %d/%d at offset %d\n", glyphId, maxpTable.maxGlyphs, off);
       all_glyphs.push_back(read_simple_glyph(buffer.data() + off));
     }
+
+    //debug_render_glyph_table(all_glyphs);
+
     return true;
   }
 }
