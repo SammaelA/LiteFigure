@@ -161,7 +161,7 @@ namespace LiteFigure
         max_pos = max(max_pos, cur_pos + figure_size);
         cur_pos.x += figure_size.x;
       }
-      cur_pos.y = row_height;
+      cur_pos.y += row_height;
     }
 
     int2 proper_size = max_pos - min_pos;
@@ -382,6 +382,7 @@ namespace LiteFigure
   LiteImage::Image2D<float4> render_figure_to_image(FigurePtr fig)
   {
     std::vector<Instance> instances = prepare_instances(fig);
+    printf("%d instances, figure size %d %d\n", (int)instances.size(), fig->size.x, fig->size.y);
     LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(fig->size.x, fig->size.y);
     for (auto &inst : instances)
     {
