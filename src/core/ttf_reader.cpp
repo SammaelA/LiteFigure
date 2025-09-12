@@ -125,7 +125,6 @@ namespace LiteFigure
     glyph.yMax = big_to_little_endian<int16_t>(bytes + off);
     off += 2;
 
-    printf("contours %d\n", number_of_contours);
     if (number_of_contours == 0)
     {
       //empty glyph
@@ -144,7 +143,6 @@ namespace LiteFigure
     {
       endPtsOfContours[i] = big_to_little_endian<uint16_t>(bytes + off);
       off += 2;
-      printf("%d\n", (int)endPtsOfContours[i]);
     }
     uint32_t instructions_cnt = big_to_little_endian<uint16_t>(bytes + off);
     off += 2;
@@ -176,13 +174,13 @@ namespace LiteFigure
         flags[cur_point] = flags[cur_point - 1];
         flags_skip--;
       }
-      printf("flags[%d] = %d %d %d %d %d %d\n", cur_point,
-        (int)flags[cur_point].on_curve,
-        (int)flags[cur_point].x_short_vector,
-        (int)flags[cur_point].y_short_vector,
-        (int)flags[cur_point].repeat,
-        (int)flags[cur_point].x_is_same,
-        (int)flags[cur_point].y_is_same);
+      // printf("flags[%d] = %d %d %d %d %d %d\n", cur_point,
+      //   (int)flags[cur_point].on_curve,
+      //   (int)flags[cur_point].x_short_vector,
+      //   (int)flags[cur_point].y_short_vector,
+      //   (int)flags[cur_point].repeat,
+      //   (int)flags[cur_point].x_is_same,
+      //   (int)flags[cur_point].y_is_same);
     }
 
     //filling contours, no points here yet
@@ -260,14 +258,14 @@ namespace LiteFigure
       }
     }
 
-    //print points
-    for (auto &c : glyph.contours)
+    //due to different rendering conventions in ttf, we invert y axis here
+    for (int c = 0; c < glyph.contours.size(); c++)
     {
-      for (auto &p : c.points)
+      for (int p = 0; p < glyph.contours[c].points.size(); p++)
       {
-        printf("(%d,%d)%s ", (int)p.x, (int)p.y, p.flags.on_curve ? "o" : "x");
+        int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
+        glyph.contours[c].points[p].y = glyph.yMax - y_rel;
       }
-      printf("\n");
     }
 
     return glyph;
@@ -335,23 +333,22 @@ namespace LiteFigure
     int rows = (all_glyphs.size() + glyphs_per_row - 1) / glyphs_per_row;
     float glyph_scale = 0.5f;
 
-    grid->rows.resize(rows);
     float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
+    uint32_t curId = 0;
     for (int gId = 0; gId < all_glyphs.size(); gId++)
     {
       const TTFSimpleGlyph &glyph = all_glyphs[gId];
-      int row = gId / glyphs_per_row;
-      int col = gId % glyphs_per_row;
+      int row = curId / glyphs_per_row;
+      int col = curId % glyphs_per_row;
+      if (grid->rows.size() <= row)
+        grid->rows.push_back(std::vector<FigurePtr>());
       float2 sz = float2(1.1f*std::max(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin));
 
       if (glyph.contours.size() == 0)
       {
-        std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
-        fill->color = float4(1,0,1,1);
-        fill->size = int2(glyph_scale*sz);
-        grid->rows[row].push_back(fill);
         continue;
       }
+      curId++;
 
       std::shared_ptr<Collage> collage = std::make_shared<Collage>();
       collage->size = int2(glyph_scale*sz);
