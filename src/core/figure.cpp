@@ -352,20 +352,20 @@ namespace LiteFigure
     return instances;
   }
 
-  void create_and_save_figure(const Block &blk, const std::string &filename)
+  FigurePtr create_figure_from_blk(const Block *blk)
   {
     Block temp_blk;
     const Block *figure_blk = nullptr;
-    if (blk.get_block("templates") && blk.get_block("figure"))
+    if (blk->get_block("templates") && blk->get_block("figure"))
     {
-      const Block *templates_blk = blk.get_block("templates");
+      const Block *templates_blk = blk->get_block("templates");
       std::map<std::string, const Block *> templates_lib;
       for (int i = 0; i < templates_blk->size(); i++)
       {
         if (templates_blk->get_block(i))
           templates_lib[templates_blk->get_name(i)] = templates_blk->get_block(i);
       }
-      temp_blk.copy(blk.get_block("figure"));
+      temp_blk.copy(blk->get_block("figure"));
       instantiate_all_templates(&temp_blk, templates_lib);
       figure_blk = &temp_blk;
 
@@ -373,10 +373,30 @@ namespace LiteFigure
     }
     else
     {
-      figure_blk = &blk;
+      figure_blk = blk;
     }
 
-    FigurePtr fig = create_figure(figure_blk);
+    return create_figure(figure_blk);
+  }
+
+  LiteImage::Image2D<float4> render_figure_to_image(FigurePtr fig)
+  {
+    std::vector<Instance> instances = prepare_instances(fig);
+    LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(fig->size.x, fig->size.y);
+    for (auto &inst : instances)
+    {
+      IRenderable *renderable = dynamic_cast<IRenderable *>(inst.prim.get());
+      if (renderable)
+        renderable->render(inst.data, out);
+      else
+        printf("ERROR: trying to render unrenderable primitve (type %d)\n", (int)(inst.prim->getType()));
+    }
+    return out;
+  }
+
+  void create_and_save_figure(const Block &blk, const std::string &filename)
+  {
+    FigurePtr fig = create_figure_from_blk(&blk);
 
     if (fig->getType() == FigureType::Unknown)
     {
@@ -384,23 +404,13 @@ namespace LiteFigure
       return;
     }
 
-    std::vector<Instance> instances = prepare_instances(fig);
-
     // if different conversions are available (e.g. save to svg
     // or pdf), they can be selected here
     bool should_render = true;
 
     if (should_render)
     {
-      LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(fig->size.x, fig->size.y);
-      for (auto &inst : instances)
-      {
-        IRenderable *renderable = dynamic_cast<IRenderable *>(inst.prim.get());
-        if (renderable)
-          renderable->render(inst.data, out);
-        else
-          printf("ERROR: trying to render unrenderable primitve (type %d)\n", (int)(inst.prim->getType()));
-      }
+      LiteImage::Image2D<float4> out = render_figure_to_image(fig);
       LiteImage::SaveImage(filename.c_str(), out);
     }
   }

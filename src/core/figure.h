@@ -148,5 +148,7 @@ namespace LiteFigure
     bool antialiased = true;
   };
 
+  FigurePtr create_figure_from_blk(const Block *blk);
+  LiteImage::Image2D<float4> render_figure_to_image(FigurePtr figure);
   void create_and_save_figure(const Block &blk, const std::string &filename);
 }
