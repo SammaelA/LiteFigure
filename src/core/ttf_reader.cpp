@@ -83,6 +83,33 @@ namespace LiteFigure
     std::map<uint32_t, uint16_t> unicodeToGlyph; //map from 4-bytes unicode codepoint to glyph index
   };
 
+  struct TTFHorizontalHeaderTable
+  {
+    uint32_t version;
+    uint16_t ascent;
+    uint16_t descent;
+    uint16_t lineGap;
+    uint16_t advanceWidthMax;
+    int16_t  minLeftSideBearing;
+    int16_t  minRightSideBearing;
+    int16_t  xMaxExtent;
+    int16_t  caretSlopeRise;
+    int16_t  caretSlopeRun;
+    int16_t  caretOffset;
+    int16_t  reserved1;
+    int16_t  reserved2;
+    int16_t  reserved3;
+    int16_t  reserved4;
+    int16_t  metricDataFormat;
+    uint16_t numOfLongHorMetrics;
+  };
+
+  struct TTFLongHorMetric
+  {
+    uint16_t advanceWidth;
+    int16_t  leftSideBearing; 
+  };
+
   struct TTFSimpleGlyph
   {
     struct Flags
@@ -110,6 +137,7 @@ namespace LiteFigure
     int16_t yMin;
     int16_t xMax;
     int16_t yMax;
+    TTFLongHorMetric advance; //not in glyf table, but we store it here for convenience
     std::vector<Contour> contours;
   };
 
@@ -694,6 +722,52 @@ namespace LiteFigure
     return table;
   }
 
+  TTFHorizontalHeaderTable read_hhea_table(const uint8_t *bytes)
+  {
+    TTFHorizontalHeaderTable table;
+    uint32_t off = 0;
+    table.version = big_to_little_endian<uint32_t>(bytes + off); off += 4;
+    table.ascent = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    table.descent = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    table.lineGap = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    table.advanceWidthMax = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    table.minLeftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.minRightSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.xMaxExtent = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.caretSlopeRise = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.caretSlopeRun = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.caretOffset = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.reserved1 = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.reserved2 = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.reserved3 = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.reserved4 = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.metricDataFormat = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.numOfLongHorMetrics = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+
+    printf("hhea version %08x, ascent %d, descent %d, lineGap %d, numOfLongHorMetrics %d\n",
+      table.version, table.ascent, table.descent, table.lineGap, table.numOfLongHorMetrics);
+    return table;
+  }
+
+  std::vector<TTFLongHorMetric> read_hmtx_table(const uint8_t *bytes, uint32_t numOfLongHorMetrics, uint32_t numGlyphs)
+  {
+    std::vector<TTFLongHorMetric> metrics(numGlyphs);
+    uint32_t off = 0;
+    for (int i = 0; i < numOfLongHorMetrics; i++)
+    {
+      metrics[i].advanceWidth = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+      metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
+      printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
+    }
+    for (int i = numOfLongHorMetrics; i < numGlyphs; i++)
+    {
+      metrics[i].advanceWidth = metrics[numOfLongHorMetrics - 1].advanceWidth;
+      metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
+      printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
+    }
+    return metrics;
+  }
+
   std::vector<uint32_t> get_all_glyph_locations(const uint8_t *bytes, uint32_t numGlyphs,
                                                 uint32_t bytesPerEntry, uint32_t locaTableLocation)
   {
@@ -727,7 +801,7 @@ namespace LiteFigure
       int col = curId % glyphs_per_row;
       if (grid->rows.size() <= row)
         grid->rows.push_back(std::vector<FigurePtr>());
-      float2 sz = float2(1.1f*std::max(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin));
+      float2 sz = float2(glyph.advance.advanceWidth, 1.1f*(glyph.yMax - glyph.yMin));
 
       if (glyph.contours.size() == 0)
       {
@@ -751,7 +825,7 @@ namespace LiteFigure
           std::shared_ptr<Line> line = std::make_shared<Line>();
           line->start = p0f;
           line->end = p1f;
-          line->thickness = 0.01f;
+          line->thickness = 0.03f;
           line->color = colors[cId % 4];
           collage->elements.emplace_back();
           collage->elements.back().figure = line;
@@ -760,7 +834,7 @@ namespace LiteFigure
 
           std::shared_ptr<Circle> circle = std::make_shared<Circle>();
           circle->center = p0f;
-          circle->radius = 0.01f;
+          circle->radius = 0.03f;
           circle->color = p0.flags.on_curve ? float4(1,0,0,1) : float4(0,0,1,1);
           collage->elements.emplace_back();
           collage->elements.back().figure = circle;
@@ -822,6 +896,8 @@ namespace LiteFigure
     uint32_t maxp_table_id = (uint32_t)-1;
     uint32_t loca_table_id = (uint32_t)-1;
     uint32_t cmap_table_id = (uint32_t)-1;
+    uint32_t hhea_table_id = (uint32_t)-1;
+    uint32_t hmtx_table_id = (uint32_t)-1;
     for (int i=0;i<offsetSubtable.numTables;i++)
     {
       if (strncmp("glyf", table_directories[i].tag, 4) == 0)
@@ -834,6 +910,10 @@ namespace LiteFigure
         loca_table_id = i;
       else if (strncmp("cmap", table_directories[i].tag, 4) == 0)
         cmap_table_id = i;
+      else if (strncmp("hhea", table_directories[i].tag, 4) == 0)
+        hhea_table_id = i;
+      else if (strncmp("hmtx", table_directories[i].tag, 4) == 0)
+        hmtx_table_id = i;
     }
 
     if (head_table_id == (uint32_t)-1)
@@ -860,10 +940,21 @@ namespace LiteFigure
     {
       printf("Warning: no cmap table found\n");
     }
+    if (hhea_table_id == (uint32_t)-1)
+    {
+      printf("Warning: no hhea table found\n");
+    }
+    if (hmtx_table_id == (uint32_t)-1)
+    {
+      printf("Warning: no hmtx table found\n");
+    }
 
     TTFHeadTable headTable = read_head_table(buffer.data() + table_directories[head_table_id].offset);
     TTFMaxpTable maxpTable = read_maxp_table(buffer.data() + table_directories[maxp_table_id].offset);
     TTFCmapTable cmapTable = read_cmap_table(buffer.data() + table_directories[cmap_table_id].offset);
+    TTFHorizontalHeaderTable hheaTable = read_hhea_table(buffer.data() + table_directories[hhea_table_id].offset);
+    std::vector<TTFLongHorMetric> hmtxTable = read_hmtx_table(buffer.data() + table_directories[hmtx_table_id].offset,
+                                                              hheaTable.numOfLongHorMetrics, maxpTable.maxGlyphs); 
     std::vector<uint32_t> all_glyph_locations = get_all_glyph_locations(
       buffer.data(), maxpTable.maxGlyphs, 
       headTable.indexToLocFormat == 0 ? 2 : 4,
@@ -906,6 +997,11 @@ namespace LiteFigure
       {
         font.glyphs.push_back(glyphSet.simple_glyphs[glyphSet.glyph_locations[glyphId]]);
       }
+    }
+
+    for (int i = 0; i < font.glyphs.size(); i++)
+    {
+      font.glyphs[i].advance = hmtxTable[i];
     }
 
     // due to different rendering conventions in ttf, we invert y axis here
