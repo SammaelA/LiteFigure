@@ -90,6 +90,15 @@ namespace LiteFigure
     if (!is_valid_size(force_size) && is_valid_size(size))
       force_size = size;
 
+    if (elements.size() == 0)
+    {
+      if (is_valid_size(force_size))
+        size = force_size;
+      else
+        size = int2(1, 1);
+      return size;
+    }
+
     // calculate proper size
     int2 min_val, max_val;
     get_elements_min_max(elements, min_val, max_val);
