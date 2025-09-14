@@ -79,7 +79,6 @@ namespace LiteFigure
     {
       min_val = min(min_val, elements[i].pos);
       max_val = max(max_val, elements[i].pos + elements[i].size);
-      printf("element %d %d %d %d\n", elements[i].pos.x, elements[i].pos.y, elements[i].size.x, elements[i].size.y);
     }
   }
 
@@ -106,9 +105,7 @@ namespace LiteFigure
 
     if (!is_valid_size(force_size))
       force_size = proper_size;
-
-    printf("collage size %d %d force size %d %d proper size %d %d\n", size.x, size.y, force_size.x, force_size.y, proper_size.x, proper_size.y);
-
+      
     // resize all children
     float2 scale = float2(force_size.x / float(proper_size.x), force_size.y / float(proper_size.y));
     for (int i = 0; i < elements.size(); i++)

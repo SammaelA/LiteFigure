@@ -54,7 +54,7 @@ namespace LiteFigure
 		int h = size.y;
 		float x0 = p0.x * w, y0 = p0.y * h;
 		float x1 = p1.x * w, y1 = p1.y * h;
-		float T = thickness * fmin(w, h);
+		float T = thickness * fmax(w, h);
 		for (int y = 0; y < h; ++y)
 		{
 			for (int x = 0; x < w; ++x)
