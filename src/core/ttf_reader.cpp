@@ -86,9 +86,9 @@ namespace LiteFigure
   struct TTFHorizontalHeaderTable
   {
     uint32_t version;
-    uint16_t ascent;
-    uint16_t descent;
-    uint16_t lineGap;
+    int16_t  ascent;
+    int16_t  descent;
+    int16_t  lineGap;
     uint16_t advanceWidthMax;
     int16_t  minLeftSideBearing;
     int16_t  minRightSideBearing;
@@ -182,6 +182,9 @@ namespace LiteFigure
   struct Font
   {
     float scale = 1/1024.0f;
+    int16_t line_height = 0; //in FUnits
+    int16_t ascent = 0; //in FUnits
+    int16_t descent = 0; //in FUnits
     std::vector<TTFSimpleGlyph> glyphs;
     TTFCmapTable cmap;
   };
@@ -727,9 +730,9 @@ namespace LiteFigure
     TTFHorizontalHeaderTable table;
     uint32_t off = 0;
     table.version = big_to_little_endian<uint32_t>(bytes + off); off += 4;
-    table.ascent = big_to_little_endian<uint16_t>(bytes + off); off += 2;
-    table.descent = big_to_little_endian<uint16_t>(bytes + off); off += 2;
-    table.lineGap = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    table.ascent = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.descent = big_to_little_endian<int16_t>(bytes + off); off += 2;
+    table.lineGap = big_to_little_endian<int16_t>(bytes + off); off += 2;
     table.advanceWidthMax = big_to_little_endian<uint16_t>(bytes + off); off += 2;
     table.minLeftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
     table.minRightSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
@@ -832,6 +835,8 @@ namespace LiteFigure
     for (uint32_t gId : glyph_ids)
     {
       const TTFSimpleGlyph &glyph = all_glyphs[gId];
+      printf("glyph bbox: xMin %d, yMin %d, xMax %d, yMax %d, advance %d\n",
+             glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax, glyph.advance.advanceWidth);
       int row = curId / glyphs_per_row;
       int col = curId % glyphs_per_row;
       if (grid->rows.size() <= row)
@@ -841,8 +846,7 @@ namespace LiteFigure
 
       std::shared_ptr<Collage> collage = std::make_shared<Collage>();
       collage->size = int2(glyph_scale*sz) + int2(1,1);
-      printf("glyph %d size %d,%d\n", gId, (int)collage->size.x, (int)collage->size.y);
-      
+
       for (int cId = 0; cId < glyph.contours.size(); cId++)
       {
         const TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
@@ -852,6 +856,11 @@ namespace LiteFigure
           const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % contour.points.size()];
           float2 p0f = float2(float(p0.x - glyph.xMin), float(p0.y - glyph.yMin)) / sz;
           float2 p1f = float2(float(p1.x - glyph.xMin), float(p1.y - glyph.yMin)) / sz;
+
+          //flip y axis for correct display
+          p0f.y = 1.0f - p0f.y;
+          p1f.y = 1.0f - p1f.y;
+
           std::shared_ptr<Line> line = std::make_shared<Line>();
           line->start = p0f;
           line->end = p1f;
@@ -876,6 +885,98 @@ namespace LiteFigure
     }
 
     auto image = render_figure_to_image(grid);
+    LiteImage::SaveImage("saves/glyphs.png", image);
+  }
+
+  void debug_render_text(const Font &font, std::vector<uint32_t> glyph_ids)
+  {
+    const std::vector<TTFSimpleGlyph> &all_glyphs = font.glyphs;
+    std::shared_ptr<Collage> top_collage = std::make_shared<Collage>();
+    int max_w = 4000;
+    float glyph_scale = 256 * font.scale;
+
+    int cur_x = 0;
+    int cur_y = 0;
+
+    int min_x = 0;
+    int min_y = 0;
+    int max_x = 0;
+    int max_y = 0;
+
+    float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
+    for (uint32_t gId : glyph_ids)
+    {
+      const TTFSimpleGlyph &glyph = all_glyphs[gId];
+      float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
+      int cur_min_x = int(glyph_scale * float(glyph.xMin));
+      int cur_min_y = int(glyph_scale * float(glyph.yMin));
+
+      min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
+      min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
+      max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
+      max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
+
+      std::shared_ptr<Collage> collage = std::make_shared<Collage>();
+      collage->size = int2(glyph_scale*sz) + int2(1,1);
+
+      for (int cId = 0; cId < glyph.contours.size(); cId++)
+      {
+        const TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
+        for (int pId = 0; pId < contour.points.size(); pId++)
+        {
+          const TTFSimpleGlyph::Point &p0 = contour.points[pId];
+          const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % contour.points.size()];
+          float2 p0f = float2(float(p0.x - glyph.xMin), float(p0.y - glyph.yMin)) / sz;
+          float2 p1f = float2(float(p1.x - glyph.xMin), float(p1.y - glyph.yMin)) / sz;
+
+          // flip y axis for correct display
+          p0f.y = 1.0f - p0f.y;
+          p1f.y = 1.0f - p1f.y;
+
+          std::shared_ptr<Line> line = std::make_shared<Line>();
+          line->start = p0f;
+          line->end = p1f;
+          line->thickness = 0.03f;
+          line->color = colors[cId % 4];
+          collage->elements.emplace_back();
+          collage->elements.back().figure = line;
+          collage->elements.back().pos = int2(0,0);
+          collage->elements.back().size = collage->size;
+
+          std::shared_ptr<Circle> circle = std::make_shared<Circle>();
+          circle->center = p0f;
+          circle->radius = 0.03f;
+          circle->color = p0.flags.on_curve ? float4(1,0,0,1) : float4(0,0,1,1);
+          collage->elements.emplace_back();
+          collage->elements.back().figure = circle;
+          collage->elements.back().pos = int2(0,0);
+          collage->elements.back().size = collage->size;
+        }
+      }
+
+      int pos_y = cur_y-cur_min_y+font.line_height*glyph_scale-collage->size.y;
+
+      top_collage->elements.emplace_back();
+      top_collage->elements.back().figure = collage;
+      top_collage->elements.back().pos = int2(cur_x+cur_min_x,pos_y);
+      top_collage->elements.back().size = collage->size;
+
+      cur_x += glyph.advance.advanceWidth * glyph_scale + 1;
+      if (cur_x > max_w)
+      {
+        cur_x = 0;
+        cur_y += font.line_height * glyph_scale + 1;
+      }
+    }
+
+    printf("min (%d,%d), max (%d,%d)\n", min_x, min_y, max_x, max_y);
+    for (auto &elem : top_collage->elements)
+    {
+      elem.pos.x -= min_x;
+      elem.pos.y -= min_y;
+    }
+
+    auto image = render_figure_to_image(top_collage);
     LiteImage::SaveImage("saves/glyphs.png", image);
   }
 
@@ -1035,23 +1136,28 @@ namespace LiteFigure
     }
 
     fix_space_glyphs(font);
+    font.line_height = hheaTable.ascent - hheaTable.descent + hheaTable.lineGap;
+    font.ascent = hheaTable.ascent;
+    font.descent = hheaTable.descent;
 
     // due to different rendering conventions in ttf, we invert y axis here
-    for (auto &glyph : font.glyphs)
-    {
-      for (int c = 0; c < glyph.contours.size(); c++)
-      {
-        for (int p = 0; p < glyph.contours[c].points.size(); p++)
-        {
-          int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
-          glyph.contours[c].points[p].y = glyph.yMax - y_rel;
-        }
-      }
-    }
+    // for (auto &glyph : font.glyphs)
+    // {
+    //   for (int c = 0; c < glyph.contours.size(); c++)
+    //   {
+    //     for (int p = 0; p < glyph.contours[c].points.size(); p++)
+    //     {
+    //       int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
+    //       glyph.contours[c].points[p].y = glyph.yMax - y_rel;
+    //     }
+    //   }
+    // }
     
     std::vector<uint32_t> glyphs_to_render;
     // for (int c = 0; c < 32; c++)
     //   glyphs_to_render.push_back(c);
+    printf("line gap: %d\n", hheaTable.lineGap);
+    printf("line height: %d\n", font.line_height);
     printf("< > = %d\n", font.cmap.unicodeToGlyph[' ']);
     printf("space contains %d contours, %d advance\n", 
       (int)font.glyphs[font.cmap.unicodeToGlyph[' ']].contours.size(),
@@ -1063,7 +1169,7 @@ namespace LiteFigure
       uint8_t ch = uint8_t(test_str[i]);
       glyphs_to_render.push_back(font.cmap.charGlyphs[ch]);
     }
-    debug_render_glyph_table(font, glyphs_to_render);
+    debug_render_text(font, glyphs_to_render);
 
     return true;
   }
