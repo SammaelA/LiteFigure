@@ -104,9 +104,42 @@ namespace LiteFigure
     std::vector<Contour> contours;
   };
 
+  struct TTFCompoundGlyph
+  {
+    struct Flags
+    {
+      uint8_t ARG_1_AND_2_ARE_WORDS    : 1;
+      uint8_t ARGS_ARE_XY_VALUES       : 1;
+      uint8_t ROUND_XY_TO_GRID         : 1;
+      uint8_t WE_HAVE_A_SCALE          : 1;
+      uint8_t _pad                     : 1;
+      uint8_t MORE_COMPONENTS          : 1;
+      uint8_t WE_HAVE_AN_X_AND_Y_SCALE : 1;
+      uint8_t WE_HAVE_A_TWO_BY_TWO     : 1;
+      uint8_t WE_HAVE_INSTRUCTIONS     : 1;
+      uint8_t USE_MY_METRICS           : 1;
+      uint8_t OVERLAP_COMPOUND         : 1;
+    };
+    struct Component
+    {
+      uint32_t glyphIndex; //index to glyph in glyf table
+      float a,b,c,d; // transformation 
+      int16_t offsetX, offsetY; // translation (e,f from manual)
+    };
+    
+    int16_t xMin;
+    int16_t yMin;
+    int16_t xMax;
+    int16_t yMax;   
+    std::vector<Component> components;
+  };
+
   struct TTFGlyphSet
   {
     std::vector<TTFSimpleGlyph> simple_glyphs;
+    std::vector<TTFCompoundGlyph> compound_glyphs;
+    std::vector<uint32_t> glyph_locations; //for each glyph, its position in simple_glyphs or compound_glyphs
+    std::vector<bool> is_compound; //for each glyph, true if compound, false if simple
   };
 
   TTFSimpleGlyph read_simple_glyph(const uint8_t *bytes)
@@ -269,6 +302,185 @@ namespace LiteFigure
     }
 
     return glyph;
+  }
+
+  float FixedPoint2Dot14ToFloat(int16_t val)
+  {
+    return float(val) / float(1 << 14);
+  }
+
+  TTFCompoundGlyph read_compound_glyph(const uint8_t *bytes)
+  {
+    TTFCompoundGlyph glyph;
+    uint32_t off = 0;
+
+    int number_of_contours = big_to_little_endian<int16_t>(bytes + off);
+    off += 2;
+    glyph.xMin = big_to_little_endian<int16_t>(bytes + off);
+    off += 2;
+    glyph.yMin = big_to_little_endian<int16_t>(bytes + off);
+    off += 2;
+    glyph.xMax = big_to_little_endian<int16_t>(bytes + off);
+    off += 2;
+    glyph.yMax = big_to_little_endian<int16_t>(bytes + off);
+    off += 2;
+
+    if (number_of_contours >= 0)
+    {
+      printf("Simple glyphs are not supported in read_compound_glyph\n");
+      return TTFCompoundGlyph();
+    }
+
+    bool more_components = true;
+    while (more_components)
+    {
+      uint16_t flags_raw = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+      TTFCompoundGlyph::Flags flags = *(TTFCompoundGlyph::Flags*)&flags_raw;
+      more_components = flags.MORE_COMPONENTS;
+
+      TTFCompoundGlyph::Component component;
+      component.glyphIndex = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+
+      if (flags.ARG_1_AND_2_ARE_WORDS)
+      {
+        //arguments are int16
+        int16_t arg1 = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        int16_t arg2 = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        printf("arg1 %d, arg2 %d\n", arg1, arg2);
+        if (flags.ARGS_ARE_XY_VALUES)
+        {
+          component.offsetX = arg1;
+          component.offsetY = arg2;
+        }
+        else
+        {
+          printf("Warning: we do not support matching by point numbers\n");
+        }
+      }
+      else
+      {
+        //arguments are uint8
+        int8_t arg1 = bytes[off];
+        off++;
+        int8_t arg2 = bytes[off];
+        off++;
+        printf("arg1 %d, arg2 %d\n", (int)arg1, (int)arg2);
+        if (flags.ARGS_ARE_XY_VALUES)
+        {
+          component.offsetX = arg1;
+          component.offsetY = arg2;
+        }
+        else
+        {
+          printf("Warning: we do not support matching by point numbers\n");
+        }
+      }
+
+      if (flags.WE_HAVE_A_SCALE)
+      {
+        int16_t scale_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        float scale = FixedPoint2Dot14ToFloat(scale_fixed);
+        component.a = scale;
+        component.b = 0;
+        component.c = 0;
+        component.d = scale;
+      }
+      else if (flags.WE_HAVE_AN_X_AND_Y_SCALE)
+      {
+        int16_t xscale_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        int16_t yscale_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        float xscale = FixedPoint2Dot14ToFloat(xscale_fixed);
+        float yscale = FixedPoint2Dot14ToFloat(yscale_fixed);
+        component.a = xscale;
+        component.b = 0;
+        component.c = 0;
+        component.d = yscale;
+      }
+      else if (flags.WE_HAVE_A_TWO_BY_TWO)
+      {
+        int16_t a_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        int16_t b_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        int16_t c_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        int16_t d_fixed = big_to_little_endian<int16_t>(bytes + off);
+        off += 2;
+        component.a = FixedPoint2Dot14ToFloat(a_fixed);
+        component.b = FixedPoint2Dot14ToFloat(b_fixed);
+        component.c = FixedPoint2Dot14ToFloat(c_fixed);
+        component.d = FixedPoint2Dot14ToFloat(d_fixed);
+      }
+      else
+      {
+        //no scale, identity matrix
+        component.a = 1.0f;
+        component.b = 0.0f;
+        component.c = 0.0f;
+        component.d = 1.0f;
+      }
+      glyph.components.push_back(component);
+    }
+    return glyph;
+  }
+
+  TTFSimpleGlyph simplify_compound_glyph(const TTFCompoundGlyph &compound,
+                                         const TTFGlyphSet &glyphSet,
+                                         int recursion_depth = 0)
+  {
+    printf("simplify_compound_glyph size %d\n", (int)compound.components.size());
+    if (recursion_depth > 64)
+    {
+      printf("Error: too deep recursion in simplify_compound_glyph\n");
+      return TTFSimpleGlyph();
+    }
+    TTFSimpleGlyph result;
+    result.xMin = compound.xMin;
+    result.yMin = compound.yMin;
+    result.xMax = compound.xMax;
+    result.yMax = compound.yMax;
+
+    for (int cId = 0; cId < compound.components.size(); cId++)
+    {
+      const TTFCompoundGlyph::Component &component = compound.components[cId];
+      TTFSimpleGlyph sub_glyph;
+      if (glyphSet.is_compound[component.glyphIndex])
+      {
+        sub_glyph = simplify_compound_glyph(
+          glyphSet.compound_glyphs[glyphSet.glyph_locations[component.glyphIndex]],
+          glyphSet, recursion_depth + 1);
+      }
+      else
+      {
+        sub_glyph = glyphSet.simple_glyphs[glyphSet.glyph_locations[component.glyphIndex]];
+      }
+
+      //transform and add to result
+      for (int contId = 0; contId < sub_glyph.contours.size(); contId++)
+      {
+        TTFSimpleGlyph::Contour new_contour;
+        for (int pId = 0; pId < sub_glyph.contours[contId].points.size(); pId++)
+        {
+          const TTFSimpleGlyph::Point &p0 = sub_glyph.contours[contId].points[pId];
+          TTFSimpleGlyph::Point p1;
+          p1.flags = p0.flags;
+          p1.x = int16_t(component.a * float(p0.x) + component.c * float(p0.y) + float(component.offsetX));
+          p1.y = int16_t(component.b * float(p0.x) + component.d * float(p0.y) + float(component.offsetY));
+          printf("  point %d: %d,%d -> %d,%d\n", pId, p0.x, p0.y, p1.x, p1.y);
+          new_contour.points.push_back(p1);
+        }
+        result.contours.push_back(new_contour);
+      }
+    }
+
+    return result;
   }
 
   TTFHeadTable read_head_table(const uint8_t *bytes)
@@ -476,14 +688,44 @@ namespace LiteFigure
       headTable.indexToLocFormat == 0 ? 2 : 4,
       table_directories[loca_table_id].offset);
 
-    std::vector<TTFSimpleGlyph> all_glyphs;
+    TTFGlyphSet glyphSet;
+    glyphSet.is_compound.resize(maxpTable.maxGlyphs);
+    glyphSet.glyph_locations.resize(maxpTable.maxGlyphs);
     for (uint32_t glyphId = 0; glyphId < maxpTable.maxGlyphs; glyphId++)
     {
       uint32_t off = table_directories[glyph_table_id].offset + all_glyph_locations[glyphId];
-      printf("read glyph %d/%d at offset %d\n", glyphId, maxpTable.maxGlyphs, off);
-      all_glyphs.push_back(read_simple_glyph(buffer.data() + off));
+      int number_of_contours = big_to_little_endian<int16_t>(buffer.data() + off);
+      if (number_of_contours < 0)
+      {
+        glyphSet.is_compound[glyphId] = true;
+        glyphSet.glyph_locations[glyphId] = glyphSet.compound_glyphs.size();
+        printf("read glyph %d/%d at offset %d (compound)\n", glyphId, maxpTable.maxGlyphs, off);
+        glyphSet.compound_glyphs.push_back(read_compound_glyph(buffer.data() + off));
+      }
+      else
+      {
+        glyphSet.is_compound[glyphId] = false;
+        glyphSet.glyph_locations[glyphId] = glyphSet.simple_glyphs.size();
+        printf("read glyph %d/%d at offset %d (simple)\n", glyphId, maxpTable.maxGlyphs, off);
+        glyphSet.simple_glyphs.push_back(read_simple_glyph(buffer.data() + off));
+      }
     }
 
+    std::vector<TTFSimpleGlyph> all_glyphs;
+    for (uint32_t glyphId = 0; glyphId < maxpTable.maxGlyphs; glyphId++)
+    {
+      if (glyphSet.is_compound[glyphId])
+      {
+        all_glyphs.push_back(simplify_compound_glyph(
+          glyphSet.compound_glyphs[glyphSet.glyph_locations[glyphId]], glyphSet));
+      }
+      else
+      {
+        all_glyphs.push_back(glyphSet.simple_glyphs[glyphSet.glyph_locations[glyphId]]);
+      }
+    }
+    
+    //all_glyphs.resize(80);
     //debug_render_glyph_table(all_glyphs);
 
     return true;
