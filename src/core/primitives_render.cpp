@@ -82,6 +82,7 @@ namespace LiteFigure
 
 	void Circle::render(const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
+		float2 scale = float2(size.x, size.y)/fmax(size.x,size.y);
 		float2 p0 = to_float2(instance.uv_transform * float3(center.x - radius, center.y - radius, 1));
 		float2 p1 = to_float2(instance.uv_transform * float3(center.x + radius, center.y + radius, 1));
 		int min_y = int(floor(fmin(p0.y, p1.y) * size.y));
@@ -91,7 +92,7 @@ namespace LiteFigure
 			for (int x = 0; x < size.x; x++)
 			{
 				float2 p = to_float2(instance.uv_transform * float3(x / (size.x + 0.5), y /(size.y + 0.5), 1));
-				float dist = LiteMath::length(p - center);
+				float dist = LiteMath::length(scale*(p - center));
 				if (dist <= radius)
 				{
 					// Optional: for anti-aliasing, fade edge
