@@ -4,6 +4,8 @@
 #include <vector>
 #include <fstream>
 #include <cstring>
+#include <map>
+
 namespace LiteFigure
 {
   template <typename T>
@@ -72,6 +74,13 @@ namespace LiteFigure
     uint16_t maxPoints;
     uint16_t maxContours;
     //there are some more fields, but we do not use it in our reader
+  };
+
+  //not a cmap table structure from the file, but our format to use
+  struct TTFCmapTable
+  {
+    uint16_t charGlyphs[256]; //map from char code to glyph index, only 256 chars supported
+    std::map<uint32_t, uint16_t> unicodeToGlyph; //map from 4-bytes unicode codepoint to glyph index
   };
 
   struct TTFSimpleGlyph
@@ -522,6 +531,104 @@ namespace LiteFigure
     return table;
   }
 
+  // Format 0 is suitable for fonts whose character codes and glyph indices are restricted to single bytes. 
+  // This was a very common situation when TrueType was introduced but is rarely encountered now.
+  TTFCmapTable read_cmap_table_format_0(const uint8_t *bytes)
+  {
+    TTFCmapTable table;
+
+    uint32_t off = 0;
+    uint16_t format = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t length = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t language = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    for (int i = 0; i < 256; i++)
+    {
+      table.charGlyphs[i] = bytes[off];
+      off++;
+      if (table.charGlyphs[i] != 0)
+        table.unicodeToGlyph[i] = table.charGlyphs[i];
+    }
+
+    return table;
+  }
+
+  // Format 4 is a two-byte encoding format. It should be used when the character codes for a font 
+  // fall into several contiguous ranges, possibly with holes in some or all of the ranges. 
+  // That is, some of the codes in a range may not be associated with glyphs in the font. 
+  TTFCmapTable read_cmap_table_format_4(const uint8_t *bytes)
+  {
+    TTFCmapTable table;
+    return table;
+  }
+
+  // Format 12 is a bit like format 4, in that it defines segments for sparse representation 
+  // in 4-byte character space.
+  TTFCmapTable read_cmap_table_format_12(const uint8_t *bytes)
+  {
+    TTFCmapTable table;
+    return table;
+  }
+
+  TTFCmapTable read_cmap_table(const uint8_t *bytes)
+  {
+    constexpr uint16_t PLATFORM_ID_UNICODE = 0;
+    constexpr uint16_t PLATFORM_ID_MAC     = 1;
+    constexpr uint16_t PLATFORM_ID_WINDOWS = 3;
+
+    struct SubtableHeader
+    {
+      uint16_t platformID;
+      uint16_t encodingID;
+      uint32_t offset; //from beginning of cmap table
+    };
+
+    uint32_t off = 0;
+    uint16_t version = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t numberSubtables = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+
+    printf("cmap version %d, numberSubtables %d\n", version, numberSubtables);
+    std::vector<SubtableHeader> subtables(numberSubtables);
+    for (int i = 0; i < numberSubtables; i++)
+    {
+      subtables[i].platformID = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+      subtables[i].encodingID = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+      subtables[i].offset     = big_to_little_endian<uint32_t>(bytes + off); off += 4;
+      printf(" subtable %d: platformID %d, encodingID %d, offset %d\n",
+        i, subtables[i].platformID, subtables[i].encodingID, subtables[i].offset);
+    }
+
+    //check encoding type to find better match for us
+
+    int format0_index = -1;
+    int format4_index = -1;
+    int format12_index = -1;
+    for (const auto &subtable : subtables)
+    {
+      uint16_t format = big_to_little_endian<uint16_t>(bytes + subtable.offset);
+      if (format == 0) format0_index = subtable.offset; // ASCII should be the same for all platforms
+      if (subtable.platformID == PLATFORM_ID_UNICODE)
+      {
+        if (format == 4) format4_index = subtable.offset;
+        if (format == 12) format12_index = subtable.offset;
+      }
+      printf("  subtable format %d\n", format);
+    }
+
+    
+    TTFCmapTable table;
+
+    //if (format12_index >= 0)// format 12 is preferred, as it supports full 4-byte unicode
+    //  table = read_cmap_table_format_12(bytes + format12_index);
+    //else if (format4_index >= 0)// format 4 is next preferred, as it supports 2-byte unicode (aka wchar_t)
+    //  table = read_cmap_table_format_4(bytes + format4_index);
+    if (format0_index >= 0)// format 0 is last resort, as it supports only 1-byte unicode
+      table = read_cmap_table_format_0(bytes + format0_index);
+    else
+      printf("Error: no suitable Unicode cmap subtable found\n");
+    
+    return table;
+  }
+
   std::vector<uint32_t> get_all_glyph_locations(const uint8_t *bytes, uint32_t numGlyphs,
                                                 uint32_t bytesPerEntry, uint32_t locaTableLocation)
   {
@@ -648,6 +755,7 @@ namespace LiteFigure
     uint32_t glyph_table_id = (uint32_t)-1;
     uint32_t maxp_table_id = (uint32_t)-1;
     uint32_t loca_table_id = (uint32_t)-1;
+    uint32_t cmap_table_id = (uint32_t)-1;
     for (int i=0;i<offsetSubtable.numTables;i++)
     {
       if (strncmp("glyf", table_directories[i].tag, 4) == 0)
@@ -658,6 +766,8 @@ namespace LiteFigure
         maxp_table_id = i;
       else if (strncmp("loca", table_directories[i].tag, 4) == 0)
         loca_table_id = i;
+      else if (strncmp("cmap", table_directories[i].tag, 4) == 0)
+        cmap_table_id = i;
     }
 
     if (head_table_id == (uint32_t)-1)
@@ -680,9 +790,14 @@ namespace LiteFigure
       printf("Error: no glyf table found\n");
       return false;
     }
+    if (cmap_table_id == (uint32_t)-1)
+    {
+      printf("Warning: no cmap table found\n");
+    }
 
     TTFHeadTable headTable = read_head_table(buffer.data() + table_directories[head_table_id].offset);
     TTFMaxpTable maxpTable = read_maxp_table(buffer.data() + table_directories[maxp_table_id].offset);
+    TTFCmapTable cmapTable = read_cmap_table(buffer.data() + table_directories[cmap_table_id].offset);
     std::vector<uint32_t> all_glyph_locations = get_all_glyph_locations(
       buffer.data(), maxpTable.maxGlyphs, 
       headTable.indexToLocFormat == 0 ? 2 : 4,
