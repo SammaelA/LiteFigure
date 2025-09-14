@@ -783,6 +783,41 @@ namespace LiteFigure
     }
     return all_glyph_locations;
   }
+
+  // Fix glyphs that represent space characters to have no contours and proper advance width.
+  // This is needed because some fonts have non-empty glyphs for space characters (idk why).
+  // here are the rules: https://developer.apple.com/fonts/TrueType-Reference-Manual/RM07/appendixB.html
+  void fix_space_glyphs(Font &font)
+  {
+    unsigned char space_chars[4] = {0x09/*tab*/, 0x0D/*carriage return*/, 0x20/*space*/, 0xA0/*no-break space*/};
+
+    // we have proper empty glyph for space, use it for all space characters
+    int space_glyph_id = -1;
+    if (font.glyphs[font.cmap.charGlyphs[0x20]].contours.size() == 0)
+    {
+      space_glyph_id = font.cmap.charGlyphs[0x20];
+    }
+    else
+    {
+      space_glyph_id = font.glyphs.size();
+
+      TTFSimpleGlyph empty_glyph;
+      empty_glyph.xMin = 0;
+      empty_glyph.yMin = 0;
+      empty_glyph.xMax = 1;
+      empty_glyph.yMax = 1;
+
+      //I don't know what advance width to use, so let's use advance from '0' character
+      empty_glyph.advance = font.glyphs[font.cmap.charGlyphs['0']].advance;
+      font.glyphs.push_back(empty_glyph);
+    }
+
+    for (char c : space_chars)
+    {
+      font.cmap.charGlyphs[c] = space_glyph_id;
+      font.cmap.unicodeToGlyph[c] = space_glyph_id;
+    }
+  }
   
   void debug_render_glyph_table(const Font &font, std::vector<uint32_t> glyph_ids)
   {
@@ -802,15 +837,10 @@ namespace LiteFigure
       if (grid->rows.size() <= row)
         grid->rows.push_back(std::vector<FigurePtr>());
       float2 sz = float2(glyph.advance.advanceWidth, 1.1f*(glyph.yMax - glyph.yMin));
-
-      if (glyph.contours.size() == 0)
-      {
-        continue;
-      }
       curId++;
 
       std::shared_ptr<Collage> collage = std::make_shared<Collage>();
-      collage->size = int2(glyph_scale*sz);
+      collage->size = int2(glyph_scale*sz) + int2(1,1);
       printf("glyph %d size %d,%d\n", gId, (int)collage->size.x, (int)collage->size.y);
       
       for (int cId = 0; cId < glyph.contours.size(); cId++)
@@ -1004,6 +1034,8 @@ namespace LiteFigure
       font.glyphs[i].advance = hmtxTable[i];
     }
 
+    fix_space_glyphs(font);
+
     // due to different rendering conventions in ttf, we invert y axis here
     for (auto &glyph : font.glyphs)
     {
@@ -1020,14 +1052,16 @@ namespace LiteFigure
     std::vector<uint32_t> glyphs_to_render;
     // for (int c = 0; c < 32; c++)
     //   glyphs_to_render.push_back(c);
-    printf("< > = %d\n", cmapTable.unicodeToGlyph[' ']);
-    printf("space contains %d contours\n", (int)font.glyphs[cmapTable.unicodeToGlyph[' ']].contours.size());
+    printf("< > = %d\n", font.cmap.unicodeToGlyph[' ']);
+    printf("space contains %d contours, %d advance\n", 
+      (int)font.glyphs[font.cmap.unicodeToGlyph[' ']].contours.size(),
+      font.glyphs[font.cmap.unicodeToGlyph[' ']].advance.advanceWidth);
     printf("units per em: %d\n", headTable.unitsPerEm);
     const char *test_str = "The quick brown fox jumps over the lazy dog 0123456789";
     for (int i = 0; test_str[i] != 0; i++)
     {
       uint8_t ch = uint8_t(test_str[i]);
-      glyphs_to_render.push_back(cmapTable.charGlyphs[ch]);
+      glyphs_to_render.push_back(font.cmap.charGlyphs[ch]);
     }
     debug_render_glyph_table(font, glyphs_to_render);
 
