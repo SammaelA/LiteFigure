@@ -151,6 +151,13 @@ namespace LiteFigure
     std::vector<bool> is_compound; //for each glyph, true if compound, false if simple
   };
 
+  struct Font
+  {
+    float scale = 1/1024.0f;
+    std::vector<TTFSimpleGlyph> glyphs;
+    TTFCmapTable cmap;
+  };
+
   TTFSimpleGlyph read_simple_glyph(const uint8_t *bytes)
   {
     TTFSimpleGlyph glyph;
@@ -703,13 +710,13 @@ namespace LiteFigure
     return all_glyph_locations;
   }
   
-  void debug_render_glyph_table(const std::vector<TTFSimpleGlyph> &all_glyphs,
-                                std::vector<uint32_t> glyph_ids)
+  void debug_render_glyph_table(const Font &font, std::vector<uint32_t> glyph_ids)
   {
+    const std::vector<TTFSimpleGlyph> &all_glyphs = font.glyphs;
     std::shared_ptr<Grid> grid = std::make_shared<Grid>();
     int glyphs_per_row = 16;
     int rows = (glyph_ids.size() + glyphs_per_row - 1) / glyphs_per_row;
-    float glyph_scale = 0.5f;
+    float glyph_scale = 256 * font.scale;
 
     float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
     uint32_t curId = 0;
@@ -885,22 +892,24 @@ namespace LiteFigure
       }
     }
 
-    std::vector<TTFSimpleGlyph> all_glyphs;
+    Font font;
+    font.cmap = cmapTable;
+    font.scale = 1.0f/float(headTable.unitsPerEm);
     for (uint32_t glyphId = 0; glyphId < maxpTable.maxGlyphs; glyphId++)
     {
       if (glyphSet.is_compound[glyphId])
       {
-        all_glyphs.push_back(simplify_compound_glyph(
+        font.glyphs.push_back(simplify_compound_glyph(
           glyphSet.compound_glyphs[glyphSet.glyph_locations[glyphId]], glyphSet));
       }
       else
       {
-        all_glyphs.push_back(glyphSet.simple_glyphs[glyphSet.glyph_locations[glyphId]]);
+        font.glyphs.push_back(glyphSet.simple_glyphs[glyphSet.glyph_locations[glyphId]]);
       }
     }
 
     // due to different rendering conventions in ttf, we invert y axis here
-    for (auto &glyph : all_glyphs)
+    for (auto &glyph : font.glyphs)
     {
       for (int c = 0; c < glyph.contours.size(); c++)
       {
@@ -916,14 +925,15 @@ namespace LiteFigure
     // for (int c = 0; c < 32; c++)
     //   glyphs_to_render.push_back(c);
     printf("< > = %d\n", cmapTable.unicodeToGlyph[' ']);
-    printf("space contains %d contours\n", (int)all_glyphs[cmapTable.unicodeToGlyph[' ']].contours.size());
+    printf("space contains %d contours\n", (int)font.glyphs[cmapTable.unicodeToGlyph[' ']].contours.size());
+    printf("units per em: %d\n", headTable.unitsPerEm);
     const char *test_str = "The quick brown fox jumps over the lazy dog 0123456789";
     for (int i = 0; test_str[i] != 0; i++)
     {
       uint8_t ch = uint8_t(test_str[i]);
       glyphs_to_render.push_back(cmapTable.charGlyphs[ch]);
     }
-    //debug_render_glyph_table(all_glyphs, glyphs_to_render);
+    debug_render_glyph_table(font, glyphs_to_render);
 
     return true;
   }
