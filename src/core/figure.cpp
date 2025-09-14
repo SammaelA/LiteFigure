@@ -73,9 +73,9 @@ namespace LiteFigure
   void get_elements_min_max(const std::vector<Collage::Element> &elements, int2 &min_val, int2 &max_val)
   {
     assert(elements.size() > 0);
-    min_val = elements[0].pos;
-    max_val = elements[0].pos + elements[0].size;
-    for (int i = 1; i < elements.size(); i++)
+    min_val = int2(0, 0);
+    max_val = int2(0, 0);
+    for (int i = 0; i < elements.size(); i++)
     {
       min_val = min(min_val, elements[i].pos);
       max_val = max(max_val, elements[i].pos + elements[i].size);
@@ -105,7 +105,7 @@ namespace LiteFigure
 
     if (!is_valid_size(force_size))
       force_size = proper_size;
-      
+
     // resize all children
     float2 scale = float2(force_size.x / float(proper_size.x), force_size.y / float(proper_size.y));
     for (int i = 0; i < elements.size(); i++)
