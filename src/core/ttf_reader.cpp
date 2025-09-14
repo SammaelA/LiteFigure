@@ -300,16 +300,6 @@ namespace LiteFigure
       }
     }
 
-    //due to different rendering conventions in ttf, we invert y axis here
-    for (int c = 0; c < glyph.contours.size(); c++)
-    {
-      for (int p = 0; p < glyph.contours[c].points.size(); p++)
-      {
-        int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
-        glyph.contours[c].points[p].y = glyph.yMax - y_rel;
-      }
-    }
-
     return glyph;
   }
 
@@ -359,7 +349,6 @@ namespace LiteFigure
         off += 2;
         int16_t arg2 = big_to_little_endian<int16_t>(bytes + off);
         off += 2;
-        printf("arg1 %d, arg2 %d\n", arg1, arg2);
         if (flags.ARGS_ARE_XY_VALUES)
         {
           component.offsetX = arg1;
@@ -377,7 +366,6 @@ namespace LiteFigure
         off++;
         int8_t arg2 = bytes[off];
         off++;
-        printf("arg1 %d, arg2 %d\n", (int)arg1, (int)arg2);
         if (flags.ARGS_ARE_XY_VALUES)
         {
           component.offsetX = arg1;
@@ -444,7 +432,6 @@ namespace LiteFigure
                                          const TTFGlyphSet &glyphSet,
                                          int recursion_depth = 0)
   {
-    printf("simplify_compound_glyph size %d\n", (int)compound.components.size());
     if (recursion_depth > 64)
     {
       printf("Error: too deep recursion in simplify_compound_glyph\n");
@@ -482,7 +469,6 @@ namespace LiteFigure
           p1.flags = p0.flags;
           p1.x = int16_t(component.a * float(p0.x) + component.c * float(p0.y) + float(component.offsetX));
           p1.y = int16_t(component.b * float(p0.x) + component.d * float(p0.y) + float(component.offsetY));
-          printf("  point %d: %d,%d -> %d,%d\n", pId, p0.x, p0.y, p1.x, p1.y);
           new_contour.points.push_back(p1);
         }
         result.contours.push_back(new_contour);
@@ -558,6 +544,78 @@ namespace LiteFigure
   TTFCmapTable read_cmap_table_format_4(const uint8_t *bytes)
   {
     TTFCmapTable table;
+    
+    uint32_t off = 0;
+    uint16_t format = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t length = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t language = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t segCountX2 = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t searchRange = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t entrySelector = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    uint16_t rangeShift = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+
+    uint16_t segCount = segCountX2 / 2;
+    std::vector<uint16_t> endCode(segCount);
+    std::vector<uint16_t> startCode(segCount);
+    std::vector<uint16_t> idDelta(segCount);
+    std::vector<uint16_t> idRangeOffset(segCount);
+
+    for (int i = 0; i < segCount; i++)
+    {
+      endCode[i] = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+    }
+    uint16_t reservedPad = big_to_little_endian<uint16_t>(bytes + off); off += 2;
+    assert(reservedPad == 0);
+
+    for (int i = 0; i < segCount; i++)
+    {
+      startCode[i] = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+    }
+
+    for (int i = 0; i < segCount; i++)
+    {
+      idDelta[i] = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+    }
+
+    uint32_t idRangeOffset_start = off;
+    for (int i = 0; i < segCount; i++)
+    {
+      idRangeOffset[i] = big_to_little_endian<uint16_t>(bytes + off);
+      off += 2;
+    }
+
+    uint32_t glyphIdArray_start = off;
+    for (int segId = 0; segId < segCount; segId++)
+    {
+      for (uint32_t c = startCode[segId]; c <= endCode[segId]; c++)
+      {
+        uint16_t glyphIndex = 0;
+        if (idRangeOffset[segId] == 0)
+        {
+          glyphIndex = (c + idDelta[segId]) % 65536;
+        }
+        else
+        {
+          uint32_t offset_in_idRangeOffset = idRangeOffset[segId] + 2 * (c - startCode[segId]);
+          uint32_t glyphIndex_address = idRangeOffset_start + 2 * segId + offset_in_idRangeOffset;
+          if (glyphIndex_address >= length)
+          {
+            printf("Error: glyphIndex_address %d is out of range\n", glyphIndex_address);
+            continue;
+          }
+          glyphIndex = big_to_little_endian<uint16_t>(bytes + glyphIndex_address);
+          if (glyphIndex != 0)
+            glyphIndex = (glyphIndex + idDelta[segId]) % 65536;
+        }
+        if (c < 256)
+          table.charGlyphs[c] = glyphIndex;
+        table.unicodeToGlyph[c] = glyphIndex;
+      }
+    }
+
     return table;
   }
 
@@ -619,9 +677,9 @@ namespace LiteFigure
 
     //if (format12_index >= 0)// format 12 is preferred, as it supports full 4-byte unicode
     //  table = read_cmap_table_format_12(bytes + format12_index);
-    //else if (format4_index >= 0)// format 4 is next preferred, as it supports 2-byte unicode (aka wchar_t)
-    //  table = read_cmap_table_format_4(bytes + format4_index);
-    if (format0_index >= 0)// format 0 is last resort, as it supports only 1-byte unicode
+    if (format4_index >= 0)// format 4 is next preferred, as it supports 2-byte unicode (aka wchar_t)
+     table = read_cmap_table_format_4(bytes + format4_index);
+    else if (format0_index >= 0)// format 0 is last resort, as it supports only 1-byte unicode
       table = read_cmap_table_format_0(bytes + format0_index);
     else
       printf("Error: no suitable Unicode cmap subtable found\n");
@@ -645,16 +703,17 @@ namespace LiteFigure
     return all_glyph_locations;
   }
   
-  void debug_render_glyph_table(const std::vector<TTFSimpleGlyph> &all_glyphs)
+  void debug_render_glyph_table(const std::vector<TTFSimpleGlyph> &all_glyphs,
+                                std::vector<uint32_t> glyph_ids)
   {
     std::shared_ptr<Grid> grid = std::make_shared<Grid>();
     int glyphs_per_row = 16;
-    int rows = (all_glyphs.size() + glyphs_per_row - 1) / glyphs_per_row;
+    int rows = (glyph_ids.size() + glyphs_per_row - 1) / glyphs_per_row;
     float glyph_scale = 0.5f;
 
     float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
     uint32_t curId = 0;
-    for (int gId = 0; gId < all_glyphs.size(); gId++)
+    for (uint32_t gId : glyph_ids)
     {
       const TTFSimpleGlyph &glyph = all_glyphs[gId];
       int row = curId / glyphs_per_row;
@@ -839,9 +898,32 @@ namespace LiteFigure
         all_glyphs.push_back(glyphSet.simple_glyphs[glyphSet.glyph_locations[glyphId]]);
       }
     }
+
+    // due to different rendering conventions in ttf, we invert y axis here
+    for (auto &glyph : all_glyphs)
+    {
+      for (int c = 0; c < glyph.contours.size(); c++)
+      {
+        for (int p = 0; p < glyph.contours[c].points.size(); p++)
+        {
+          int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
+          glyph.contours[c].points[p].y = glyph.yMax - y_rel;
+        }
+      }
+    }
     
-    //all_glyphs.resize(80);
-    //debug_render_glyph_table(all_glyphs);
+    std::vector<uint32_t> glyphs_to_render;
+    // for (int c = 0; c < 32; c++)
+    //   glyphs_to_render.push_back(c);
+    printf("< > = %d\n", cmapTable.unicodeToGlyph[' ']);
+    printf("space contains %d contours\n", (int)all_glyphs[cmapTable.unicodeToGlyph[' ']].contours.size());
+    const char *test_str = "The quick brown fox jumps over the lazy dog 0123456789";
+    for (int i = 0; test_str[i] != 0; i++)
+    {
+      uint8_t ch = uint8_t(test_str[i]);
+      glyphs_to_render.push_back(cmapTable.charGlyphs[ch]);
+    }
+    //debug_render_glyph_table(all_glyphs, glyphs_to_render);
 
     return true;
   }
