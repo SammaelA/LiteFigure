@@ -17,7 +17,8 @@ namespace LiteFigure
     PrimitiveImage,
     PrimitiveFill,
     Line,
-    Circle
+    Circle,
+    Polygon
   };
   
   struct Figure
@@ -146,6 +147,21 @@ namespace LiteFigure
     float2 center = float2(0.5f,0.5f);
     float radius = 0.25f;
     bool antialiased = true;
+  };
+
+  struct Polygon : public Primitive, public IRenderable
+  {
+    virtual FigureType getType() const override { return FigureType::Polygon; }
+    virtual bool load(const Block *blk) override;
+    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
+
+    struct Contour
+    {
+      std::vector<float2> points; // in normalized coordinates (0..1)
+    };
+
+    float4 color = float4(0,0,0,1);
+    std::vector<Contour> contours;
   };
 
   FigurePtr create_figure_from_blk(const Block *blk);

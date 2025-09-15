@@ -84,4 +84,77 @@ namespace LiteFigure
     return true;
   }
   
+  bool Polygon::load(const Block *blk)
+  {
+    std::shared_ptr<Polygon> prim = std::make_shared<Polygon>();
+    size = blk->get_ivec2("size", size);
+    color = blk->get_vec4("color", color);
+    Block *points_blk = blk->get_block("points");
+    Block *contours_blk = blk->get_block("contours");
+    if (!points_blk && !contours_blk)
+    {
+      printf("[Polygon::load] both points and contours blocks are missing\n");
+      return false;
+    }
+    if (points_blk && contours_blk)
+    {
+      printf("[Polygon::load] only one of points or contours blocks should be present\n");
+      return false;
+    }
+
+    if (points_blk)
+    {
+      Contour c;
+      for (int i=0;i<points_blk->size();i++)
+      {
+        if (points_blk->get_type(i) != Block::ValueType::VEC2)
+        {
+          printf("[Polygon::load] points must be of type vec2\n");
+          return false;
+        }
+        c.points.push_back(points_blk->get_vec2(i, float2(0,0)));
+      }
+      contours = {c};
+    }
+    else if (contours_blk)
+    {
+      for (int i=0;i<contours_blk->size();i++)
+      {
+        if (contours_blk->get_type(i) != Block::ValueType::BLOCK)
+        {
+          printf("[Polygon::load] contours must be of type block\n");
+          return false;
+        }
+        Block *cblk = contours_blk->get_block(i);
+        Contour c;
+        for (int j=0;j<cblk->size();j++)
+        {
+          if (cblk->get_type(j) != Block::ValueType::VEC2)
+          {
+            printf("[Polygon::load] contour points must be of type vec2\n");
+            return false;
+          }
+          c.points.push_back(cblk->get_vec2(j, float2(0,0)));
+        }
+        contours.push_back(c);
+      }
+    }
+
+    if (contours.empty())
+    {
+      printf("[Polygon::load] no contours found\n");
+      return false;
+    }
+
+    for (auto &c : contours)
+    {
+      if (c.points.size() < 3)
+      {
+        printf("[Polygon::load] each contour must have at least 3 points\n");
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
