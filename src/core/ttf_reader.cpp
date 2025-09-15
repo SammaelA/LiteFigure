@@ -821,6 +821,37 @@ namespace LiteFigure
       font.cmap.unicodeToGlyph[c] = space_glyph_id;
     }
   }
+
+  // Add implied on-curve points between consecutive off-curve points in each contour.
+  // This simplifies rendering logic, as we don't need to handle implied points on the fly.
+  // Also add off-curve points between on-curve points to make all segments quadratic Beziers.
+  // It is not strictly necessary, but it makes rendering logic simpler.
+  void add_implied_points(TTFSimpleGlyph &glyph)
+  {
+    for (int cId = 0; cId < glyph.contours.size(); cId++)
+    {
+      TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
+      std::vector<TTFSimpleGlyph::Point> new_points;
+      int num_points = contour.points.size();
+      for (int pId = 0; pId < num_points; pId++)
+      {
+        const TTFSimpleGlyph::Point &p0 = contour.points[pId];
+        const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % num_points];
+        new_points.push_back(p0);
+        if (p0.flags.on_curve == p1.flags.on_curve)
+        {
+          //add implied on-curve point
+          TTFSimpleGlyph::Point p_implied;
+          p_implied.flags = p0.flags;
+          p_implied.flags.on_curve = 1 - p0.flags.on_curve;
+          p_implied.x = (p0.x + p1.x) / 2;
+          p_implied.y = (p0.y + p1.y) / 2;
+          new_points.push_back(p_implied);
+        }
+      }
+      contour.points = new_points;
+    }
+  }
   
   void debug_render_glyph_table(const Font &font, std::vector<uint32_t> glyph_ids)
   {
@@ -1133,6 +1164,11 @@ namespace LiteFigure
     for (int i = 0; i < font.glyphs.size(); i++)
     {
       font.glyphs[i].advance = hmtxTable[i];
+    }
+
+    for (auto &glyph : font.glyphs)
+    {
+      add_implied_points(glyph);
     }
 
     fix_space_glyphs(font);
