@@ -89,6 +89,9 @@ namespace LiteFigure
     std::shared_ptr<Polygon> prim = std::make_shared<Polygon>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
+    outline = blk->get_bool("outline", outline);
+    outline_thickness = blk->get_double("outline_thickness", outline_thickness);
+    outline_antialiased = blk->get_bool("outline_antialiased", outline_antialiased);
     Block *points_blk = blk->get_block("points");
     Block *contours_blk = blk->get_block("contours");
     if (!points_blk && !contours_blk)

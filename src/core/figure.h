@@ -161,6 +161,9 @@ namespace LiteFigure
     };
 
     float4 color = float4(0,0,0,1);
+    bool outline = false;
+    float outline_thickness = 0.01f; // in normalized coordinates (0..1)
+    bool  outline_antialiased = true;
     std::vector<Contour> contours;
   };
 

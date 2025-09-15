@@ -343,9 +343,34 @@ void Polygon::render(const InstanceData &instance, LiteImage::Image2D<float4> &o
 {
 	float4 c = color;
 	std::vector<Triangle> triangles = triangulate(*this);
-	printf("created %zu triangles for polygon\n", triangles.size());
-	for (const auto &tri : triangles) {
-		render_triangle(tri, instance, out, c, size);
+
+	if (outline)
+	{
+		for (const auto &tri : triangles)
+		{
+			std::pair<float2, float2> edges[3] = {
+				{tri.p1, tri.p2},
+				{tri.p2, tri.p3},
+				{tri.p3, tri.p1}
+			};
+			for (const auto &edge : edges)
+			{
+				Line line;
+				line.start = edge.first;
+				line.end = edge.second;
+				line.thickness = outline_thickness;
+				line.color = color;
+				line.antialiased = outline_antialiased;
+				line.size = size;
+				line.render(instance, out);
+			}
+		}
+	}
+	else
+	{
+		for (const auto &tri : triangles) {
+			render_triangle(tri, instance, out, c, size);
+		}
 	}
 }
 }

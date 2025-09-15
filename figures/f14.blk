@@ -1,0 +1,98 @@
+{
+  type:e_FigureType = Grid
+  row {
+    elem {
+        type:e_FigureType = Polygon
+        size:i2 = 1024, 1024
+        color:p4 = 1,1,0,1
+        outline:b = true
+        points {
+            point:p2 = 0,0
+            point:p2 = 0,0.6
+            point:p2 = 0.4,0.6
+            point:p2 = 0.4,0
+        }
+    }
+    elem {
+        type:e_FigureType = Polygon
+        size:i2 = 1024, 1024
+        color:p4 = 1,1,0,1
+        outline:b = true
+        points {
+            point:p2 = 0,0
+            point:p2 = 0.9,0
+            point:p2 = 0.9,0.6
+            point:p2 = 0.3,0.6
+            point:p2 = 0.3,0.9
+            point:p2 = 0.0,0.9
+        }
+    }
+    elem {
+        type:e_FigureType = Polygon
+        size:i2 = 1024, 1024
+        color:p4 = 1,1,0,1
+        outline:b = true
+        contours {
+            outer {
+                point:p2 = 0.0,0.0
+                point:p2 = 0.6,0.0
+                point:p2 = 0.6,0.6
+                point:p2 = 0.0,0.6
+            }
+            inner {
+                point:p2 = 0.2,0.2
+                point:p2 = 0.2,0.4
+                point:p2 = 0.4,0.4
+                point:p2 = 0.4,0.2
+            }
+        }
+    }
+    elem {
+        type:e_FigureType = Polygon
+        size:i2 = 1024, 1024
+        color:p4 = 1,1,0,1
+        outline:b = true
+        contours {
+            //{2, 0}, {3, 1}, {4, 0}, {3, 2}, {4, 3}, {2, 2}, {0, 3}, {1, 2}, {0, 0}, {1, 1}
+            star {
+                point:p2 = 0.5,0.0
+                point:p2 = 0.75,0.25
+                point:p2 = 1.0,0.0
+                point:p2 = 0.75,0.5
+                point:p2 = 1.0,0.75
+                point:p2 = 0.5,0.5
+                point:p2 = 0.0,0.75
+                point:p2 = 0.25,0.5
+                point:p2 = 0.0,0.0
+                point:p2 = 0.25,0.25
+            }
+        }
+    }
+    elem {
+        type:e_FigureType = Polygon
+        size:i2 = 1024, 1024
+        color:p4 = 1,1,0,1
+        outline:b = true
+        contours {
+            outer {
+                point:p2 = 0.0,0.1
+                point:p2 = 0.6,0.1
+                point:p2 = 0.6,0.9
+                point:p2 = 0.0,0.9
+            }
+            inner_2 {
+                point:p2 = 0.2,0.6
+                point:p2 = 0.2,0.8
+                point:p2 = 0.4,0.8
+                point:p2 = 0.4,0.6
+            }
+            inner_1 {
+                point:p2 = 0.2,0.2
+                point:p2 = 0.2,0.4
+                point:p2 = 0.4,0.4
+                point:p2 = 0.4,0.2
+            }
+        }
+    }
+  }
+}
