@@ -1,5 +1,6 @@
 #include "figure.h"
 #include "templates.h"
+#include "renderer.h"
 #include <cstdio>
 
 namespace LiteFigure
@@ -391,17 +392,14 @@ namespace LiteFigure
 
   LiteImage::Image2D<float4> render_figure_to_image(FigurePtr fig)
   {
+    Renderer renderer;
     std::vector<Instance> instances = prepare_instances(fig);
     printf("%d instances, figure size %d %d\n", (int)instances.size(), fig->size.x, fig->size.y);
     LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(fig->size.x, fig->size.y);
+
     for (auto &inst : instances)
-    {
-      IRenderable *renderable = dynamic_cast<IRenderable *>(inst.prim.get());
-      if (renderable)
-        renderable->render(inst.data, out);
-      else
-        printf("ERROR: trying to render unrenderable primitve (type %d)\n", (int)(inst.prim->getType()));
-    }
+      renderer.render_instance(inst, out);
+
     return out;
   }
 

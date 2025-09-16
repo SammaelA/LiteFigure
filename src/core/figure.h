@@ -62,11 +62,6 @@ namespace LiteFigure
     InstanceData data;
   };
 
-  struct IRenderable
-  {
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const = 0;
-  };
-
   struct Grid : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Grid; }
@@ -103,30 +98,27 @@ namespace LiteFigure
     float2 scale = float2(1,1);
   };
 
-  struct PrimitiveImage : public Primitive, public IRenderable
+  struct PrimitiveImage : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::PrimitiveImage; }
     virtual bool load(const Block *blk) override;
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     LiteImage::Sampler sampler;
     LiteImage::Image2D<float4> image;
   };
 
-  struct PrimitiveFill : public Primitive, public IRenderable
+  struct PrimitiveFill : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::PrimitiveFill; }
     virtual bool load(const Block *blk) override;
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     float4 color = float4(1,0,0,1);
   };
 
-  struct Line : public Primitive, public IRenderable
+  struct Line : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::Line; }
     virtual bool load(const Block *blk) override;
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     float4 color = float4(0,0,0,1);
     // start, end and thickness are in normalized coordinates (0..1)
@@ -136,11 +128,10 @@ namespace LiteFigure
     bool antialiased = true;
   };
 
-  struct Circle : public Primitive, public IRenderable
+  struct Circle : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::Circle; }
     virtual bool load(const Block *blk) override;
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     float4 color = float4(0,0,0,1);
     // center and radius are in normalized coordinates (0..1)
@@ -149,11 +140,10 @@ namespace LiteFigure
     bool antialiased = true;
   };
 
-  struct Polygon : public Primitive, public IRenderable
+  struct Polygon : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::Polygon; }
     virtual bool load(const Block *blk) override;
-    virtual void render(const InstanceData &data, LiteImage::Image2D<float4> &out) const override;
 
     struct Contour
     {
