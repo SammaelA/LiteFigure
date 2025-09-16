@@ -785,7 +785,7 @@ namespace LiteFigure
         const TTFSimpleGlyph::Point &p0 = contour.points[pId];
         const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % num_points];
         new_points.push_back(p0);
-        if (p0.flags.on_curve == p1.flags.on_curve)
+        if (!p0.flags.on_curve && !p1.flags.on_curve)
         {
           //add implied on-curve point
           TTFSimpleGlyph::Point p_implied;
@@ -955,6 +955,192 @@ namespace LiteFigure
     }
 
     auto image = render_figure_to_image(top_collage);
+    LiteImage::SaveImage("saves/glyphs.png", image);
+  }
+
+  struct GlyphLine
+  {
+    float2 p0, p1;
+  };
+
+  struct GlyphBezier
+  {
+    float2 p0, p1, p2;
+  };
+
+  float2 quadratic_bezier(const GlyphBezier &bez, float t)
+  {
+    return (1 - t) * (1 - t) * bez.p0 + 2 * (1 - t) * t * bez.p1 + t * t * bez.p2;
+  }
+
+  void solve_quadratic(float a, float b, float c, float &x1, float &x2)
+  {
+    if (std::abs(a) < 1e-9f)
+    {
+      x1 = -c / b;
+      return;
+    }
+
+    float d = b * b - 4 * a * c;
+    if (d < 0) return;
+    x1 = (-b - std::sqrt(d)) / (2 * a);
+    x2 = (-b + std::sqrt(d)) / (2 * a);
+  }
+
+  void render_bezier_glyph_bruteforce(int2 pos, int2 size, float4 color, 
+                                      const std::vector<GlyphLine> &lines,
+                                      const std::vector<GlyphBezier> &beziers,
+                                      LiteImage::Image2D<float4> &out_image)
+  {
+    std::vector<float2> line_y_limits(lines.size());
+    std::vector<float2> bezier_y_limits(beziers.size());
+    for (int i = 0; i < lines.size(); i++)
+    {
+      line_y_limits[i].x = std::min(lines[i].p0.y, lines[i].p1.y);
+      line_y_limits[i].y = std::max(lines[i].p0.y, lines[i].p1.y);
+    }
+    for (int i = 0; i < beziers.size(); i++)
+    {
+      bezier_y_limits[i].x = std::min(beziers[i].p0.y, std::min(beziers[i].p1.y, beziers[i].p2.y));
+      bezier_y_limits[i].y = std::max(beziers[i].p0.y, std::max(beziers[i].p1.y, beziers[i].p2.y));
+    }
+
+    for (int y=0; y<size.y; y++)
+    {
+      for (int x=0; x<size.x; x++)
+      {
+        float2 p = float2((x+0.5f)/size.x, (y+0.5f)/size.y);
+        int intersections = 0;
+
+        for (int i=0;i<lines.size();i++)
+        {
+          if (p.y < line_y_limits[i].x || p.y > line_y_limits[i].y)
+            continue;
+          
+          //intersect ray y = p.y with lines
+          float t = -(lines[i].p0.y - p.y) / (lines[i].p1.y - lines[i].p0.y);
+          if (t > 0 && t < 1)
+          {
+            float x = lines[i].p0.x + (lines[i].p1.x - lines[i].p0.x) * t;
+            if (x > p.x)
+              intersections++;
+          }
+        }
+
+        for (int i=0;i<beziers.size();i++)
+        {
+          if (p.y < bezier_y_limits[i].x || p.y > bezier_y_limits[i].y)
+            continue;
+          
+          //intersect ray y = p.y with bezier
+          float a = beziers[i].p0.y - 2 * beziers[i].p1.y + beziers[i].p2.y;
+          float b = 2 * (beziers[i].p1.y - beziers[i].p0.y);
+          float c = beziers[i].p0.y - p.y;
+          float t1 = 1000, t2 = 1000;
+          solve_quadratic(a, b, c, t1, t2);
+          if (t1 > 0 && t1 < 1)
+          {
+            float x = quadratic_bezier(beziers[i], t1).x;
+            if (x > p.x)
+              intersections++;
+          }
+          if (t2 > 0 && t2 < 1)
+          {
+            float x = quadratic_bezier(beziers[i], t2).x;
+            if (x > p.x)
+              intersections++;
+          }
+        }
+
+        out_image[int2(pos.x+x, pos.y+y)] = intersections % 2 ? color : float4(0,0,0,1);
+      }
+    }
+  }
+
+  void debug_render_text_bezier(const Font &font, std::vector<uint32_t> glyph_ids)
+  {
+    const std::vector<TTFSimpleGlyph> &all_glyphs = font.glyphs;
+    int max_w = 4096;
+    float glyph_scale = 512 * font.scale;
+
+    int cur_x = 0;
+    int cur_y = 0;
+
+    int min_x = 0;
+    int min_y = 0;
+    int max_x = 0;
+    int max_y = 0;
+
+    LiteImage::Image2D<float4> image = LiteImage::Image2D<float4>(max_w, max_w);
+
+    float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
+    for (uint32_t gId : glyph_ids)
+    {
+      const TTFSimpleGlyph &glyph = all_glyphs[gId];
+      float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
+      int cur_min_x = int(glyph_scale * float(glyph.xMin));
+      int cur_min_y = int(glyph_scale * float(glyph.yMin));
+
+      min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
+      min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
+      max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
+      max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
+
+      std::vector<GlyphLine> lines;
+      std::vector<GlyphBezier> beziers;
+
+      for (int cId = 0; cId < glyph.contours.size(); cId++)
+      {
+        const TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
+        int pId = 0;
+        while (pId < contour.points.size())
+        {
+          const TTFSimpleGlyph::Point &p0 = contour.points[pId];
+          const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % contour.points.size()];
+          const TTFSimpleGlyph::Point &p2 = contour.points[(pId + 2) % contour.points.size()];
+          float2 p0f = float2(float(p0.x - glyph.xMin), float(p0.y - glyph.yMin)) / sz;
+          float2 p1f = float2(float(p1.x - glyph.xMin), float(p1.y - glyph.yMin)) / sz;
+          float2 p2f = float2(float(p2.x - glyph.xMin), float(p2.y - glyph.yMin)) / sz;
+
+          // flip y axis for correct display
+          p0f.y = 1.0f - p0f.y;
+          p1f.y = 1.0f - p1f.y;
+          p2f.y = 1.0f - p2f.y;
+
+          //quadratic bezier
+          if (p0.flags.on_curve && !p1.flags.on_curve && p2.flags.on_curve)
+          {
+            beziers.push_back(GlyphBezier{p0f, p1f, p2f});
+            pId += 2;
+          }
+          else if (p0.flags.on_curve && p1.flags.on_curve)
+          {
+            lines.push_back(GlyphLine{p0f, p1f});
+            pId += 1;
+          }
+          else 
+          {
+            printf("erroneus flags combination %d %d %d\n", p0.flags.on_curve, p1.flags.on_curve, p2.flags.on_curve);
+            pId += 1;
+          }
+        }
+      }
+
+      int2 size = int2(glyph_scale*sz) + int2(1,1);
+      int pos_y = cur_y-cur_min_y+font.line_height*glyph_scale-size.y;
+      int2 pos = int2(cur_x+cur_min_x, pos_y);
+
+      cur_x += glyph.advance.advanceWidth * glyph_scale + 1;
+      if (cur_x > max_w)
+      {
+        cur_x = glyph.advance.advanceWidth * glyph_scale + 1;
+        cur_y += font.line_height * glyph_scale + 1;
+        pos = int2(0, pos_y + font.line_height * glyph_scale + 1);
+      }
+
+      render_bezier_glyph_bruteforce(pos, size, float4(1,1,1,1), lines, beziers, image);
+    }
+
     LiteImage::SaveImage("saves/glyphs.png", image);
   }
 
@@ -1152,7 +1338,7 @@ namespace LiteFigure
       uint8_t ch = uint8_t(test_str[i]);
       glyphs_to_render.push_back(font.cmap.charGlyphs[ch]);
     }
-    debug_render_text(font, glyphs_to_render);
+    debug_render_text_bezier(font, glyphs_to_render);
 
     return true;
   }
