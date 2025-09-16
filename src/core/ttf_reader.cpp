@@ -1,5 +1,6 @@
 #include "ttf_reader.h"
 #include "figure.h"
+#include "font.h"
 #include <cstdint>
 #include <vector>
 #include <fstream>
@@ -76,13 +77,6 @@ namespace LiteFigure
     //there are some more fields, but we do not use it in our reader
   };
 
-  //not a cmap table structure from the file, but our format to use
-  struct TTFCmapTable
-  {
-    uint16_t charGlyphs[256]; //map from char code to glyph index, only 256 chars supported
-    std::map<uint32_t, uint16_t> unicodeToGlyph; //map from 4-bytes unicode codepoint to glyph index
-  };
-
   struct TTFHorizontalHeaderTable
   {
     uint32_t version;
@@ -102,43 +96,6 @@ namespace LiteFigure
     int16_t  reserved4;
     int16_t  metricDataFormat;
     uint16_t numOfLongHorMetrics;
-  };
-
-  struct TTFLongHorMetric
-  {
-    uint16_t advanceWidth;
-    int16_t  leftSideBearing; 
-  };
-
-  struct TTFSimpleGlyph
-  {
-    struct Flags
-    {
-      uint8_t on_curve       : 1;
-      uint8_t x_short_vector : 1;
-      uint8_t y_short_vector : 1;
-      uint8_t repeat         : 1;
-      uint8_t x_is_same      : 1;
-      uint8_t y_is_same      : 1;
-      uint8_t reserved       : 2;
-    };
-    struct Point
-    {
-      int16_t x;
-      int16_t y;
-      Flags flags;
-    };
-    
-    struct Contour
-    {
-      std::vector<Point> points; 
-    };
-    int16_t xMin;
-    int16_t yMin;
-    int16_t xMax;
-    int16_t yMax;
-    TTFLongHorMetric advance; //not in glyf table, but we store it here for convenience
-    std::vector<Contour> contours;
   };
 
   struct TTFCompoundGlyph
@@ -177,16 +134,6 @@ namespace LiteFigure
     std::vector<TTFCompoundGlyph> compound_glyphs;
     std::vector<uint32_t> glyph_locations; //for each glyph, its position in simple_glyphs or compound_glyphs
     std::vector<bool> is_compound; //for each glyph, true if compound, false if simple
-  };
-
-  struct Font
-  {
-    float scale = 1/1024.0f;
-    int16_t line_height = 0; //in FUnits
-    int16_t ascent = 0; //in FUnits
-    int16_t descent = 0; //in FUnits
-    std::vector<TTFSimpleGlyph> glyphs;
-    TTFCmapTable cmap;
   };
 
   TTFSimpleGlyph read_simple_glyph(const uint8_t *bytes)
