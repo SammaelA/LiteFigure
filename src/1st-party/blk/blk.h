@@ -165,6 +165,7 @@ struct Block
 
   struct DataArray
   {
+    ~DataArray() { for (auto &v : values) v.clear(); }
     ValueType type = EMPTY;
     std::vector<Value> values;
   };
