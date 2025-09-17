@@ -10,6 +10,16 @@ int main(int argc, char *argv[])
     return 0;
   }
   
+  if (argc > 1 && std::string(argv[1]) == "--blk_debug")
+  {
+    Block blk;
+    load_block_from_file(argv[2], blk);
+    std::string res;
+    save_block_to_string(res, blk);
+    printf("%s\n", res.c_str());
+    return 0;
+  }
+  
   if (argc != 3)
   {
     printf("Usage: %s input.blk <output_image>\n", argv[0]);

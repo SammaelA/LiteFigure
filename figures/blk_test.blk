@@ -1,0 +1,6 @@
+{
+    string_1:s = "abcd"
+    string_2:s = "ab\ncd"
+    string_3:s = "ab\11cd"
+    strings:arr = {"abcd", "ab\ncd", "ab\11cd", "ab\'\\\'\"cd"}
+}

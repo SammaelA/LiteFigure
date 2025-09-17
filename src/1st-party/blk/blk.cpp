@@ -192,6 +192,188 @@ std::string next_token(const char *data, int &pos)
   return res;
 }
 
+
+static constexpr int CHARS_COUNT = 12;
+static const char *esc_chars = "abefnrtv\'\"\\?";
+static const char *esc_codes = "\a\b\e\f\n\r\t\v\'\"\\\?";
+
+//reading string, processing escape sequences
+std::string read_string(const char *data, int &cur_pos)
+{
+  enum class State
+  {
+    NORMAL,
+    ESCAPE,
+    OCT_1,
+    OCT_2,
+    HEX,
+    HEX_1
+  };
+
+  std::string s;
+  int len = 0;
+  bool had_escape = false;
+  State state = State::NORMAL;
+  uint32_t cur_code = 0;
+  while (data[cur_pos] != 0 && !(data[cur_pos] == '\"' && state == State::NORMAL))
+  {
+    if (state == State::NORMAL)
+    {
+      if (data[cur_pos] == '\\')
+      {
+        if (!had_escape)
+        {
+          s = std::string(data + cur_pos - len, len);
+          had_escape = true;
+        }
+        cur_code = 0;
+        state = State::ESCAPE;
+      }
+      else if (had_escape)
+        s.push_back(data[cur_pos]);
+    }
+    else if (state == State::ESCAPE)
+    {
+      if (data[cur_pos] == 'x')
+        state = State::HEX;
+      else if (data[cur_pos] >= '0' && data[cur_pos] <= '7')
+      {
+        state = State::OCT_1;
+        cur_code = data[cur_pos] - '0';
+      }
+      else
+      {
+        bool found = false;
+        for (int i = 0; i < CHARS_COUNT; i++)
+        {
+          if (data[cur_pos] == esc_chars[i])
+          {
+            s.push_back(esc_codes[i]);
+            found = true;
+            break;
+          }
+        }
+        if (!found)
+        {
+          s.push_back(data[cur_pos]);
+          fprintf(stderr, "line %d unknown escape sequence", cur_line);
+        }
+        state = State::NORMAL;
+      }
+    }
+    else if (state == State::OCT_1)
+    {
+      if (data[cur_pos] >= '0' && data[cur_pos] <= '7')
+      {
+        cur_code = cur_code * 8 + data[cur_pos] - '0';
+        state = State::OCT_2;
+      }
+      else
+      {
+        s.push_back(char(cur_code));
+        state = State::NORMAL;
+      }
+    }
+    else if (state == State::OCT_2)
+    {
+      if (data[cur_pos] >= '0' && data[cur_pos] <= '7')
+      {
+        cur_code = cur_code * 8 + data[cur_pos] - '0';
+        state = State::NORMAL;
+      }
+      else
+      {
+        s.push_back(char(cur_code));
+        state = State::NORMAL;
+      }
+    }
+    else if (state == State::HEX)
+    {
+      if (data[cur_pos] >= '0' && data[cur_pos] <= '9')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - '0';
+        state = State::HEX_1;
+      }
+      else if (data[cur_pos] >= 'a' && data[cur_pos] <= 'f')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - 'a' + 10;
+        state = State::HEX_1;
+      }
+      else if (data[cur_pos] >= 'A' && data[cur_pos] <= 'F')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - 'A' + 10;
+        state = State::HEX_1;
+      }
+      else
+      {
+        fprintf(stderr, "line %d broken hex escape sequence", cur_line);
+        s.push_back('\\');
+        s.push_back('x');
+        state = State::NORMAL;
+      }
+    }
+    else if (state == State::HEX_1)
+    {
+      if (data[cur_pos] >= '0' && data[cur_pos] <= '9')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - '0';
+      }
+      else if (data[cur_pos] >= 'a' && data[cur_pos] <= 'f')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - 'a' + 10;
+      }
+      else if (data[cur_pos] >= 'A' && data[cur_pos] <= 'F')
+      {
+        cur_code = cur_code * 16 + data[cur_pos] - 'A' + 10;
+      }
+      else
+      {
+        s.push_back(char(cur_code));
+        state = State::NORMAL;
+      }
+    }
+    len++;
+    cur_pos++;
+  }
+
+  if (!had_escape)
+    s = std::string(data + cur_pos - len, len);
+
+  return s;
+}
+
+// saves string with escape sequences and hex for unprintable characters
+std::string save_string(const std::string &s)
+{
+  const char *hex_chars = "0123456789ABCDEF";
+  std::string res;
+  res.reserve(s.size() * 2);
+  for (int i = 0; i < s.size(); i++)
+  {
+    bool found = false;
+    for (int j = 0; j < CHARS_COUNT; j++)
+    {
+      if (s[i] == esc_codes[j])
+      {
+        res.push_back('\\');
+        res.push_back(esc_chars[j]);
+        found = true;
+        break;
+      }
+    }
+    if (!found && s[i] < 32)
+    {
+      res.push_back('\\');
+      res.push_back('x');
+      res.push_back(hex_chars[s[i] / 16]);
+      res.push_back(hex_chars[s[i] % 16]);
+    }
+    else if (!found)
+      res.push_back(s[i]);
+  }
+  return res;
+}
+
 bool load_block(const char *data, int &cur_pos, Block &b);
 bool read_array(const char *data, int &cur_pos, Block::DataArray &a);
 bool read_value(const char *data, int &cur_pos, Block::Value &v)
@@ -505,15 +687,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
       std::string par = next_token(data, cur_pos);
       if (par == "\"")
       {
-        int len = 0;
-        const char *start = data + cur_pos;
-        while (data[cur_pos] != 0 && data[cur_pos] != '\"')
-        {
-          if (data[cur_pos] == '\n')
-            cur_line++;
-          len++;
-          cur_pos++;
-        }
+        std::string s = read_string(data, cur_pos);
         if (data[cur_pos] == 0)
         {
           v.type = Block::ValueType::EMPTY;
@@ -524,7 +698,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v)
         {
           cur_pos++;
           v.type = Block::ValueType::STRING;
-          v.s = new std::string(start, len);
+          v.s = new std::string(s);
         }
       }
     }
@@ -567,15 +741,7 @@ bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
         fprintf(stderr, "line %d empty token in array", cur_line);
       else if (tok == "\"")
       {
-        int len = 0;
-        const char *start = data + cur_pos;
-        while (data[cur_pos] != 0 && data[cur_pos] != '\"')
-        {
-          if (data[cur_pos] == '\n')
-            cur_line++;
-          len++;
-          cur_pos++;
-        }
+        std::string s = read_string(data, cur_pos);
         if (data[cur_pos] == 0)
         {
           val.type = Block::ValueType::EMPTY;
@@ -586,7 +752,7 @@ bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
         {
           cur_pos++;
           val.type = Block::ValueType::STRING;
-          val.s = new std::string(start, len);
+          val.s = new std::string(s);
         }
       }
       else
@@ -995,7 +1161,7 @@ void save_arr(std::string &str, Block::DataArray &a)
     for (int i = 0; i < a.values.size(); i++)
     {
       if (a.values[i].s)
-        str += "\"" + *(a.values[i].s) + "\"";
+        str += "\"" + save_string(*(a.values[i].s)) + "\"";
       else
         str += "\"\"";
       if (i < a.values.size() - 1)
@@ -1084,7 +1250,7 @@ void save_value(std::string &str, Block::Value &v)
   }
   else if (v.type == Block::ValueType::STRING && v.s)
   {
-    str += ":s = \"" + *(v.s) + "\"";
+    str += ":s = \"" + save_string(*(v.s)) + "\"";
   }
   else if (v.type == Block::ValueType::ARRAY && v.a)
   {
