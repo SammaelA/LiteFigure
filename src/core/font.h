@@ -59,4 +59,7 @@ namespace LiteFigure
     std::vector<TTFSimpleGlyph> glyphs;
     TTFCmapTable cmap;
   };
+
+  // load font from file first time, then returns it from cache
+  const Font &get_font(const std::string &filename);
 }

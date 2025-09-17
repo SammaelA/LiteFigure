@@ -707,13 +707,13 @@ namespace LiteFigure
     {
       metrics[i].advanceWidth = big_to_little_endian<uint16_t>(bytes + off); off += 2;
       metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
-      printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
+      //printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
     }
     for (int i = numOfLongHorMetrics; i < numGlyphs; i++)
     {
       metrics[i].advanceWidth = metrics[numOfLongHorMetrics - 1].advanceWidth;
       metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
-      printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
+      //printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
     }
     return metrics;
   }
@@ -729,7 +729,7 @@ namespace LiteFigure
         all_glyph_locations[glyphIndex] = big_to_little_endian<uint16_t>(bytes + locaTableLocation + glyphIndex * bytesPerEntry) * 2u;
       else
         all_glyph_locations[glyphIndex] = big_to_little_endian<uint32_t>(bytes + locaTableLocation + glyphIndex * bytesPerEntry);
-      printf("glyph %d offset %d\n", glyphIndex, all_glyph_locations[glyphIndex]);
+      //printf("glyph %d offset %d\n", glyphIndex, all_glyph_locations[glyphIndex]);
     }
     return all_glyph_locations;
   }
@@ -958,193 +958,54 @@ namespace LiteFigure
     LiteImage::SaveImage("saves/glyphs.png", image);
   }
 
-  struct GlyphLine
-  {
-    float2 p0, p1;
-  };
-
-  struct GlyphBezier
-  {
-    float2 p0, p1, p2;
-  };
-
-  float2 quadratic_bezier(const GlyphBezier &bez, float t)
-  {
-    return (1 - t) * (1 - t) * bez.p0 + 2 * (1 - t) * t * bez.p1 + t * t * bez.p2;
-  }
-
-  void solve_quadratic(float a, float b, float c, float &x1, float &x2)
-  {
-    if (std::abs(a) < 1e-9f)
-    {
-      x1 = -c / b;
-      return;
-    }
-
-    float d = b * b - 4 * a * c;
-    if (d < 0) return;
-    x1 = (-b - std::sqrt(d)) / (2 * a);
-    x2 = (-b + std::sqrt(d)) / (2 * a);
-  }
-
-  void render_bezier_glyph_bruteforce(int2 pos, int2 size, float4 color, 
-                                      const std::vector<GlyphLine> &lines,
-                                      const std::vector<GlyphBezier> &beziers,
-                                      LiteImage::Image2D<float4> &out_image)
-  {
-    std::vector<float2> line_y_limits(lines.size());
-    std::vector<float2> bezier_y_limits(beziers.size());
-    for (int i = 0; i < lines.size(); i++)
-    {
-      line_y_limits[i].x = std::min(lines[i].p0.y, lines[i].p1.y);
-      line_y_limits[i].y = std::max(lines[i].p0.y, lines[i].p1.y);
-    }
-    for (int i = 0; i < beziers.size(); i++)
-    {
-      bezier_y_limits[i].x = std::min(beziers[i].p0.y, std::min(beziers[i].p1.y, beziers[i].p2.y));
-      bezier_y_limits[i].y = std::max(beziers[i].p0.y, std::max(beziers[i].p1.y, beziers[i].p2.y));
-    }
-
-    for (int y=0; y<size.y; y++)
-    {
-      for (int x=0; x<size.x; x++)
-      {
-        float2 p = float2((x+0.5f)/size.x, (y+0.5f)/size.y);
-        int intersections = 0;
-
-        for (int i=0;i<lines.size();i++)
-        {
-          if (p.y < line_y_limits[i].x || p.y > line_y_limits[i].y)
-            continue;
-          
-          //intersect ray y = p.y with lines
-          float t = -(lines[i].p0.y - p.y) / (lines[i].p1.y - lines[i].p0.y);
-          if (t > 0 && t < 1)
-          {
-            float x = lines[i].p0.x + (lines[i].p1.x - lines[i].p0.x) * t;
-            if (x > p.x)
-              intersections++;
-          }
-        }
-
-        for (int i=0;i<beziers.size();i++)
-        {
-          if (p.y < bezier_y_limits[i].x || p.y > bezier_y_limits[i].y)
-            continue;
-          
-          //intersect ray y = p.y with bezier
-          float a = beziers[i].p0.y - 2 * beziers[i].p1.y + beziers[i].p2.y;
-          float b = 2 * (beziers[i].p1.y - beziers[i].p0.y);
-          float c = beziers[i].p0.y - p.y;
-          float t1 = 1000, t2 = 1000;
-          solve_quadratic(a, b, c, t1, t2);
-          if (t1 > 0 && t1 < 1)
-          {
-            float x = quadratic_bezier(beziers[i], t1).x;
-            if (x > p.x)
-              intersections++;
-          }
-          if (t2 > 0 && t2 < 1)
-          {
-            float x = quadratic_bezier(beziers[i], t2).x;
-            if (x > p.x)
-              intersections++;
-          }
-        }
-
-        out_image[int2(pos.x+x, pos.y+y)] = intersections % 2 ? color : float4(0,0,0,1);
-      }
-    }
-  }
-
   void debug_render_text_bezier(const Font &font, std::vector<uint32_t> glyph_ids)
   {
-    const std::vector<TTFSimpleGlyph> &all_glyphs = font.glyphs;
-    int max_w = 4096;
-    float glyph_scale = 512 * font.scale;
 
-    int cur_x = 0;
-    int cur_y = 0;
-
-    int min_x = 0;
-    int min_y = 0;
-    int max_x = 0;
-    int max_y = 0;
-
-    LiteImage::Image2D<float4> image = LiteImage::Image2D<float4>(max_w, max_w);
-
-    float4 colors[4] = {float4(1,1,1,1), float4(1,1,0,1), float4(1,0,1,1), float4(0,1,1,1)};
-    for (uint32_t gId : glyph_ids)
-    {
-      const TTFSimpleGlyph &glyph = all_glyphs[gId];
-      float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
-      int cur_min_x = int(glyph_scale * float(glyph.xMin));
-      int cur_min_y = int(glyph_scale * float(glyph.yMin));
-
-      min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
-      min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
-      max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
-      max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
-
-      std::vector<GlyphLine> lines;
-      std::vector<GlyphBezier> beziers;
-
-      for (int cId = 0; cId < glyph.contours.size(); cId++)
-      {
-        const TTFSimpleGlyph::Contour &contour = glyph.contours[cId];
-        int pId = 0;
-        while (pId < contour.points.size())
-        {
-          const TTFSimpleGlyph::Point &p0 = contour.points[pId];
-          const TTFSimpleGlyph::Point &p1 = contour.points[(pId + 1) % contour.points.size()];
-          const TTFSimpleGlyph::Point &p2 = contour.points[(pId + 2) % contour.points.size()];
-          float2 p0f = float2(float(p0.x - glyph.xMin), float(p0.y - glyph.yMin)) / sz;
-          float2 p1f = float2(float(p1.x - glyph.xMin), float(p1.y - glyph.yMin)) / sz;
-          float2 p2f = float2(float(p2.x - glyph.xMin), float(p2.y - glyph.yMin)) / sz;
-
-          // flip y axis for correct display
-          p0f.y = 1.0f - p0f.y;
-          p1f.y = 1.0f - p1f.y;
-          p2f.y = 1.0f - p2f.y;
-
-          //quadratic bezier
-          if (p0.flags.on_curve && !p1.flags.on_curve && p2.flags.on_curve)
-          {
-            beziers.push_back(GlyphBezier{p0f, p1f, p2f});
-            pId += 2;
-          }
-          else if (p0.flags.on_curve && p1.flags.on_curve)
-          {
-            lines.push_back(GlyphLine{p0f, p1f});
-            pId += 1;
-          }
-          else 
-          {
-            printf("erroneus flags combination %d %d %d\n", p0.flags.on_curve, p1.flags.on_curve, p2.flags.on_curve);
-            pId += 1;
-          }
-        }
-      }
-
-      int2 size = int2(glyph_scale*sz) + int2(1,1);
-      int pos_y = cur_y-cur_min_y+font.line_height*glyph_scale-size.y;
-      int2 pos = int2(cur_x+cur_min_x, pos_y);
-
-      cur_x += glyph.advance.advanceWidth * glyph_scale + 1;
-      if (cur_x > max_w)
-      {
-        cur_x = glyph.advance.advanceWidth * glyph_scale + 1;
-        cur_y += font.line_height * glyph_scale + 1;
-        pos = int2(0, pos_y + font.line_height * glyph_scale + 1);
-      }
-
-      render_bezier_glyph_bruteforce(pos, size, float4(1,1,1,1), lines, beziers, image);
-    }
-
-    LiteImage::SaveImage("saves/glyphs.png", image);
   }
 
   bool read_ttf_debug(const std::string &filename)
+  {
+    Font font = read_ttf(filename);
+    if (font.glyphs.size() == 0)
+    {
+      return false;
+    }
+
+    // due to different rendering conventions in ttf, we invert y axis here
+    // for (auto &glyph : font.glyphs)
+    // {
+    //   for (int c = 0; c < glyph.contours.size(); c++)
+    //   {
+    //     for (int p = 0; p < glyph.contours[c].points.size(); p++)
+    //     {
+    //       int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
+    //       glyph.contours[c].points[p].y = glyph.yMax - y_rel;
+    //     }
+    //   }
+    // }
+    
+    std::vector<uint32_t> glyphs_to_render;
+    // for (int c = 0; c < 32; c++)
+    //   glyphs_to_render.push_back(c);
+    // printf("line gap: %d\n", hheaTable.lineGap);
+    // printf("line height: %d\n", font.line_height);
+    // printf("< > = %d\n", font.cmap.unicodeToGlyph[' ']);
+    // printf("space contains %d contours, %d advance\n", 
+    //   (int)font.glyphs[font.cmap.unicodeToGlyph[' ']].contours.size(),
+    //   font.glyphs[font.cmap.unicodeToGlyph[' ']].advance.advanceWidth);
+    // printf("units per em: %d\n", headTable.unitsPerEm);
+    const char *test_str = "The quick brown fox jumps over the lazy dog 0123456789";
+    for (int i = 0; test_str[i] != 0; i++)
+    {
+      uint8_t ch = uint8_t(test_str[i]);
+      glyphs_to_render.push_back(font.cmap.charGlyphs[ch]);
+    }
+    debug_render_text_bezier(font, glyphs_to_render);
+
+    return true;
+  }
+
+  Font read_ttf(const std::string &filename)
   {
     std::vector<uint8_t> buffer;
     TTFOffsetSubtable offsetSubtable;
@@ -1214,34 +1075,37 @@ namespace LiteFigure
     if (head_table_id == (uint32_t)-1)
     {
       printf("Error: no head table found\n");
-      return false;
+      return Font();
     }
     if (maxp_table_id == (uint32_t)-1)
     {
       printf("Error: no maxp table found\n");
-      return false;
+      return Font();
     }
     if (loca_table_id == (uint32_t)-1)
     {
       printf("Error: no loca table found\n");
-      return false;
+      return Font();
     }
     if (glyph_table_id == (uint32_t)-1)
     {
       printf("Error: no glyf table found\n");
-      return false;
+      return Font();
     }
     if (cmap_table_id == (uint32_t)-1)
     {
-      printf("Warning: no cmap table found\n");
+      printf("Error: no cmap table found\n");
+      return Font();
     }
     if (hhea_table_id == (uint32_t)-1)
     {
-      printf("Warning: no hhea table found\n");
+      printf("Error: no hhea table found\n");
+      return Font();
     }
     if (hmtx_table_id == (uint32_t)-1)
     {
-      printf("Warning: no hmtx table found\n");
+      printf("Error: no hmtx table found\n");
+      return Font();
     }
 
     TTFHeadTable headTable = read_head_table(buffer.data() + table_directories[head_table_id].offset);
@@ -1266,14 +1130,14 @@ namespace LiteFigure
       {
         glyphSet.is_compound[glyphId] = true;
         glyphSet.glyph_locations[glyphId] = glyphSet.compound_glyphs.size();
-        printf("read glyph %d/%d at offset %d (compound)\n", glyphId, maxpTable.maxGlyphs, off);
+        //printf("read glyph %d/%d at offset %d (compound)\n", glyphId, maxpTable.maxGlyphs, off);
         glyphSet.compound_glyphs.push_back(read_compound_glyph(buffer.data() + off));
       }
       else
       {
         glyphSet.is_compound[glyphId] = false;
         glyphSet.glyph_locations[glyphId] = glyphSet.simple_glyphs.size();
-        printf("read glyph %d/%d at offset %d (simple)\n", glyphId, maxpTable.maxGlyphs, off);
+        //printf("read glyph %d/%d at offset %d (simple)\n", glyphId, maxpTable.maxGlyphs, off);
         glyphSet.simple_glyphs.push_back(read_simple_glyph(buffer.data() + off));
       }
     }
@@ -1309,37 +1173,6 @@ namespace LiteFigure
     font.ascent = hheaTable.ascent;
     font.descent = hheaTable.descent;
 
-    // due to different rendering conventions in ttf, we invert y axis here
-    // for (auto &glyph : font.glyphs)
-    // {
-    //   for (int c = 0; c < glyph.contours.size(); c++)
-    //   {
-    //     for (int p = 0; p < glyph.contours[c].points.size(); p++)
-    //     {
-    //       int16_t y_rel = glyph.contours[c].points[p].y - glyph.yMin;
-    //       glyph.contours[c].points[p].y = glyph.yMax - y_rel;
-    //     }
-    //   }
-    // }
-    
-    std::vector<uint32_t> glyphs_to_render;
-    // for (int c = 0; c < 32; c++)
-    //   glyphs_to_render.push_back(c);
-    printf("line gap: %d\n", hheaTable.lineGap);
-    printf("line height: %d\n", font.line_height);
-    printf("< > = %d\n", font.cmap.unicodeToGlyph[' ']);
-    printf("space contains %d contours, %d advance\n", 
-      (int)font.glyphs[font.cmap.unicodeToGlyph[' ']].contours.size(),
-      font.glyphs[font.cmap.unicodeToGlyph[' ']].advance.advanceWidth);
-    printf("units per em: %d\n", headTable.unitsPerEm);
-    const char *test_str = "The quick brown fox jumps over the lazy dog 0123456789";
-    for (int i = 0; test_str[i] != 0; i++)
-    {
-      uint8_t ch = uint8_t(test_str[i]);
-      glyphs_to_render.push_back(font.cmap.charGlyphs[ch]);
-    }
-    debug_render_text_bezier(font, glyphs_to_render);
-
-    return true;
+    return font;
   }
 }

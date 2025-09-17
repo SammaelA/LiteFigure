@@ -39,6 +39,9 @@ namespace LiteFigure
 		case FigureType::Polygon:
 			render(static_cast<const Polygon &>(*inst.prim), inst.data, out);
 			break;
+		case FigureType::Glyph:
+			render(static_cast<const Glyph &>(*inst.prim), inst.data, out);
+			break;
 		default:
 			printf("ERROR: trying to render unrenderable primitve (type %d)\n", (int)(inst.prim->getType()));
 			break;

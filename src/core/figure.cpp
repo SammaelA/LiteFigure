@@ -16,11 +16,13 @@ namespace LiteFigure
                        {"PrimitiveFill", (unsigned)FigureType::PrimitiveFill},
                        {"Line", (unsigned)FigureType::Line},
                        {"Circle", (unsigned)FigureType::Circle},
-                        {"Polygon", (unsigned)FigureType::Polygon},
+                       {"Polygon", (unsigned)FigureType::Polygon},
+                       {"Text", (unsigned)FigureType::Text},
+                       {"Glyph", (unsigned)FigureType::Glyph},
                    }; })());
 
-  bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
-  bool equal(int2 a, int2 b) { return a.x == b.x && a.y == b.y; }
+  static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
+  static bool equal(int2 a, int2 b) { return a.x == b.x && a.y == b.y; }
 
   FigurePtr create_error_figure_dummy()
   {
@@ -62,6 +64,12 @@ namespace LiteFigure
       break;
     case FigureType::Polygon:
       fig = std::make_shared<Polygon>();
+      break;
+    case FigureType::Text:
+      fig = std::make_shared<Text>();
+      break;
+    case FigureType::Glyph:
+      fig = std::make_shared<Glyph>();
       break;
     default:
       printf("[create_figure] unsupported figure type %d\n", (int)blk->get_enum("type", (unsigned)FigureType::Unknown));
@@ -351,6 +359,16 @@ namespace LiteFigure
         printf("[Transform::prepare_instances] only PrimitiveImage can be transformed now\n");
         return;
       }
+    }
+    else if (dynamic_cast<Text *>(figure.get()))
+    {
+      Text *text = dynamic_cast<Text *>(figure.get());
+      text->prepare_glyphs(pos, instances);
+    }
+    else
+    {
+      printf("[prepare_instances_rec] unsupported figure type %d\n", (int)figure->getType());
+      return;
     }
   }
 

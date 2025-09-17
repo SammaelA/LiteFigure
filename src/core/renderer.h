@@ -1,6 +1,5 @@
 #pragma once
 #include "figure.h"
-#include "fonts.h"
 
 namespace LiteFigure
 {
@@ -19,5 +18,6 @@ namespace LiteFigure
 		void render(const Line &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
 		void render(const Circle &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
 		void render(const Polygon &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
+    void render(const Glyph &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
   };
 }

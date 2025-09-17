@@ -1,0 +1,8 @@
+{
+    type:e_FigureType = Text
+    size:i2 = 1024, 1024
+    font_size:i = 128
+    color:p4 = 1,1,1,1
+    text:s = "ABCD"
+    font_name:s = "fonts/times-new-roman-regular.ttf"
+}

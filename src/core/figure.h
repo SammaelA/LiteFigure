@@ -18,7 +18,9 @@ namespace LiteFigure
     PrimitiveFill,
     Line,
     Circle,
-    Polygon
+    Polygon,
+    Text,
+    Glyph
   };
   
   struct Figure
@@ -155,6 +157,33 @@ namespace LiteFigure
     float outline_thickness = 0.01f; // in normalized coordinates (0..1)
     bool  outline_antialiased = true;
     std::vector<Contour> contours;
+  };
+
+  struct Glyph : public Primitive
+  {
+    virtual FigureType getType() const override { return FigureType::Glyph; }
+    virtual bool load(const Block *blk) override;
+
+    int glyph_id = 0;
+    std::string font_name;
+    float4 color = float4(0,0,0,1);
+  };
+
+    struct Text : public Figure
+  {
+    virtual FigureType getType() const override { return FigureType::Text; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
+
+    void prepare_glyphs(int2 pos, std::vector<Instance> &out_instances);
+
+    int font_size = 128;
+    std::string text;
+    std::string font_name;
+    float4 color = float4(0,0,0,1);
+  private:
+    std::vector<int2> glyph_positions;
+    std::vector<Glyph> glyphs;
   };
 
   FigurePtr create_figure_from_blk(const Block *blk);
