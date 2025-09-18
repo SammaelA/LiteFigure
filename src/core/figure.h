@@ -169,7 +169,21 @@ namespace LiteFigure
     float4 color = float4(0,0,0,1);
   };
 
-    struct Text : public Figure
+	enum class TextAlignmentX
+	{
+		Left,
+		Right,
+		Center,
+	};
+
+	enum class TextAlignmentY
+	{
+		Top,
+		Bottom,
+		Center,
+	};
+
+  struct Text : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Text; }
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
@@ -184,6 +198,8 @@ namespace LiteFigure
     bool retain_height = false;
     float4 color = float4(0,0,0,1);
     float4 background_color = float4(0,0,0,0);
+    TextAlignmentX alignment_x = TextAlignmentX::Left;
+    TextAlignmentY alignment_y = TextAlignmentY::Top;
   private:
     std::vector<int2> glyph_positions;
     std::vector<Glyph> glyphs;

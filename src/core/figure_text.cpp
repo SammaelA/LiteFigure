@@ -6,6 +6,22 @@
 
 namespace LiteFigure
 {
+	REGISTER_ENUM(TextAlignmentX,
+				  ([]()
+				   { return std::vector<std::pair<std::string, unsigned>>{
+						 {"Left", (unsigned)TextAlignmentX::Left},
+						 {"Right", (unsigned)TextAlignmentX::Right},
+						 {"Center", (unsigned)TextAlignmentX::Center},
+					 }; })());
+
+	REGISTER_ENUM(TextAlignmentY,
+				  ([]()
+				   { return std::vector<std::pair<std::string, unsigned>>{
+						 {"Top", (unsigned)TextAlignmentY::Top},
+						 {"Bottom", (unsigned)TextAlignmentY::Bottom},
+						 {"Center", (unsigned)TextAlignmentY::Center},
+					 }; })());
+
 	bool Text::load(const Block *blk)
 	{
 		text = blk->get_string("text");
@@ -16,6 +32,8 @@ namespace LiteFigure
 		retain_width = blk->get_bool("retain_width", retain_width);
 		retain_height = blk->get_bool("retain_height", retain_height);
 		font_size = blk->get_int("font_size", font_size);
+		alignment_x = (TextAlignmentX)blk->get_enum("alignment_x", (uint32_t)alignment_x);
+		alignment_y = (TextAlignmentY)blk->get_enum("alignment_y", (uint32_t)alignment_y);
 		return true;
 	}
 
@@ -52,6 +70,7 @@ namespace LiteFigure
 		int word_start_g = 0;
 		int line_start = 0;
 		int line_start_g = 0;
+		std::vector<int> line_ends;
 		for (int c_id = 0; c_id < text.size(); c_id++)
 		{
 			uint32_t gId = font.cmap.charGlyphs[text[c_id]];
@@ -78,6 +97,7 @@ namespace LiteFigure
 				{
 					line_start = c_id+1;
 					line_start_g = glyphs.size();
+					line_ends.push_back(glyphs.size()-1);
 					cur_x = 0;
 					cur_y += font.line_height * glyph_scale;
 				}	
@@ -90,6 +110,7 @@ namespace LiteFigure
 				word_start_g = glyphs.size();
 				line_start = c_id+1;
 				line_start_g = glyphs.size();
+				line_ends.push_back(glyphs.size()-1);
 				cur_x = 0;
 				cur_y += font.line_height * glyph_scale;
 				continue;	
@@ -113,12 +134,15 @@ namespace LiteFigure
 					}
 					g_pos = int2(cur_x + cur_min_x, pos_y + y_off);
 					cur_x += glyph.advance.advanceWidth * glyph_scale;
+
+					line_ends.push_back(word_start_g-1);
 				}
 				else //the word in too large, we have to split it
 				{
 					cur_x = glyph.advance.advanceWidth * glyph_scale;
 					cur_y += font.line_height * glyph_scale;
 					g_pos = int2(0, pos_y + font.line_height * glyph_scale);
+					line_ends.push_back(glyphs.size()-1);
 				}
 			}
 
@@ -132,6 +156,8 @@ namespace LiteFigure
 			// printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
 		}
 
+		line_ends.push_back(glyphs.size()-1);
+
 		//calculate proper size
 		int2 proper_size = int2(0, 0);
 		for (int i=0;i<glyphs.size();i++)
@@ -143,6 +169,51 @@ namespace LiteFigure
 			proper_size.x = std::max(proper_size.x, size.x);
 		if (retain_height)
 			proper_size.y = std::max(proper_size.y, size.y);
+
+		//apply alignment
+		if (retain_width && alignment_x != TextAlignmentX::Left)
+		{
+			int line_start = 0;
+			for (int l_id=0;l_id<line_ends.size();l_id++)
+			{
+				int2 text_box_size = int2(0, 0);
+				for (int i=line_start;i<=line_ends[l_id];i++)
+					text_box_size = max(text_box_size, glyph_positions[i] + glyphs[i].size);
+				
+				int gap = proper_size.x - text_box_size.x;
+				int shift = 0;
+				if (alignment_x == TextAlignmentX::Right)
+					shift = gap;
+				else if (alignment_x == TextAlignmentX::Center)
+					shift = gap/2;
+
+				for (int i=line_start;i<=line_ends[l_id];i++)
+					glyph_positions[i].x += shift;
+				
+				line_start = line_ends[l_id] + 1;
+			}
+		}
+
+		if (retain_height && alignment_y != TextAlignmentY::Top)
+		{
+			//int line_start = 0;
+			//for (int l_id=0;l_id<line_ends.size();l_id++)
+			{
+				int2 text_box_size = int2(0, 0);
+				for (int i=0;i<glyphs.size();i++)
+					text_box_size = max(text_box_size, glyph_positions[i] + glyphs[i].size);
+				
+				int gap = proper_size.y - text_box_size.y;
+				int shift = 0;
+				if (alignment_y == TextAlignmentY::Bottom)
+					shift = gap;
+				else if (alignment_y == TextAlignmentY::Center)
+					shift = gap/2;
+
+				for (int i=0;i<glyphs.size();i++)
+					glyph_positions[i].y += shift;
+			}
+		}
 
 		// rescale so that text fits into the given size
 		if (is_valid_size(force_size))

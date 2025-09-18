@@ -1,0 +1,47 @@
+{
+    type:e_FigureType = Grid
+    row {
+        elem {
+            type:e_FigureType = Text
+            size:i2 = 1024, 512
+            retain_height:b = true
+            font_size:i = 64
+            color:p4 = 1,1,1,1
+            text:s = "The quick brown fox"
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+        }
+
+        elem {
+            type:e_FigureType = Text
+            size:i2 = 1024, 512
+            retain_height:b = true
+            font_size:i = 64
+            color:p4 = 1,1,1,1
+            text:s = "The quick brown fox"
+            alignment_y:e_TextAlignmentY = Bottom
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+        }
+
+        elem {
+            type:e_FigureType = Text
+            size:i2 = 1024, 512
+            retain_height:b = true
+            font_size:i = 64
+            color:p4 = 1,1,1,1
+            text:s = "The quick brown fox jumps over thee lazy dog"
+            alignment_y:e_TextAlignmentY = Bottom
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+        }
+
+        elem {
+            type:e_FigureType = Text
+            size:i2 = 1024, 512
+            retain_height:b = true
+            font_size:i = 64
+            color:p4 = 1,1,1,1
+            text:s = "The quick brown fox jumps over the lazy dog"
+            alignment_y:e_TextAlignmentY = Center
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+        }
+    }
+}
