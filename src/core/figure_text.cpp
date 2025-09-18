@@ -11,6 +11,7 @@ namespace LiteFigure
 		text = blk->get_string("text");
 		font_name = blk->get_string("font_name");
 		color = blk->get_vec4("color");
+		background_color = blk->get_vec4("background_color");
 		size = blk->get_ivec2("size", size);
 		retain_width = blk->get_bool("retain_width", retain_width);
 		retain_height = blk->get_bool("retain_height", retain_height);
@@ -166,6 +167,17 @@ namespace LiteFigure
 
 	void Text::prepare_glyphs(int2 pos, std::vector<Instance> &out_instances)
 	{
+		if (background_color.w > 0)
+		{
+			std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
+			fill->size = size;
+			fill->color = background_color;
+			Instance inst;
+			inst.prim = fill;
+			inst.data.pos = pos;
+			inst.data.size = size;
+			out_instances.push_back(inst);
+		}
 		for (int i=0;i<glyphs.size();i++)
 		{
 			Glyph &glyph = glyphs[i];

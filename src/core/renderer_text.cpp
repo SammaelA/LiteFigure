@@ -98,7 +98,8 @@ namespace LiteFigure
 					}
 				}
 
-				out_image[int2(pos.x + x, pos.y + y)] = intersections % 2 ? color : float4(0, 0, 0, 1);
+				if (intersections % 2)
+					out_image[int2(pos.x + x, pos.y + y)] = alpha_blend(color, out_image[int2(pos.x + x, pos.y + y)]);
 			}
 		}
 	}

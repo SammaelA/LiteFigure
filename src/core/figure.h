@@ -183,6 +183,7 @@ namespace LiteFigure
     bool retain_width = false;
     bool retain_height = false;
     float4 color = float4(0,0,0,1);
+    float4 background_color = float4(0,0,0,0);
   private:
     std::vector<int2> glyph_positions;
     std::vector<Glyph> glyphs;

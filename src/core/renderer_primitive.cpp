@@ -2,21 +2,6 @@
 
 namespace LiteFigure
 {
-	static inline float4 alpha_blend(float4 a, float4 b)
-	{
-		float4 r;
-		r.w = a.w + b.w * (1.0f - a.w) + 1e-9f;
-		r.x = (a.x * a.w + b.x * b.w * (1.0f - a.w)) / r.w;
-		r.y = (a.y * a.w + b.y * b.w * (1.0f - a.w)) / r.w;
-		r.z = (a.z * a.w + b.z * b.w * (1.0f - a.w)) / r.w;
-		return r;
-	}
-
-	static inline float2 to_float2(const float3 &v)
-	{
-		return float2(v.x, v.y);
-	}
-
 	void Renderer::render_instance(const Instance &inst, LiteImage::Image2D<float4> &out) const
 	{
 		if (!inst.prim)
