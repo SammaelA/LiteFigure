@@ -12,6 +12,8 @@ namespace LiteFigure
 		font_name = blk->get_string("font_name");
 		color = blk->get_vec4("color");
 		size = blk->get_ivec2("size", size);
+		retain_width = blk->get_bool("retain_width", retain_width);
+		retain_height = blk->get_bool("retain_height", retain_height);
 		font_size = blk->get_int("font_size", font_size);
 		return true;
 	}
@@ -135,12 +137,17 @@ namespace LiteFigure
 		{
 			proper_size = max(proper_size, glyph_positions[i] + glyphs[i].size);
 		}
+		
+		if (retain_width)
+			proper_size.x = std::max(proper_size.x, size.x);
+		if (retain_height)
+			proper_size.y = std::max(proper_size.y, size.y);
 
 		// rescale so that text fits into the given size
 		if (is_valid_size(force_size))
 		{
 			float scale = std::min(float(force_size.x) / float(proper_size.x), float(force_size.y) / float(proper_size.y));
-			int2 new_size = int2(0, 0);
+			int2 new_size = proper_size * scale;
 			for (int i = 0; i < glyphs.size(); i++)
 			{
 				glyph_positions[i] *= scale;

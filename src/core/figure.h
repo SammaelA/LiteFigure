@@ -180,6 +180,8 @@ namespace LiteFigure
     int font_size = 128;
     std::string text;
     std::string font_name;
+    bool retain_width = false;
+    bool retain_height = false;
     float4 color = float4(0,0,0,1);
   private:
     std::vector<int2> glyph_positions;
