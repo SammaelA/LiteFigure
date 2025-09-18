@@ -29,48 +29,95 @@ namespace LiteFigure
 
 	int2 Text::calculateSize(int2 force_size)
 	{
+		// external force_size has highest priority, but if
+		// figure size is explicitly set, it is forced to children
+		if (!is_valid_size(force_size) && is_valid_size(size))
+			force_size = size;
 
-    // external force_size has highest priority, but if
-    // figure size is explicitly set, it is forced to children
-    if (!is_valid_size(force_size) && is_valid_size(size))
-      force_size = size;
-
-		// calculate proper size and prepare array of glyphs
-		int2 proper_size = int2(0,0);
 		const Font &font = get_font(font_name);
 		float glyph_scale = font_size * font.scale;
 
-    int cur_x = 0;
-    int cur_y = 0;
+		int cur_x = 0;
+		int cur_y = 0;
 
-    int min_x = 0;
-    int min_y = 0;
-    int max_x = 0;
-    int max_y = 0;
-		for (int c_id=0;c_id<text.size();c_id++)
+		int min_x = 0;
+		int min_y = 0;
+		int max_x = 0;
+		int max_y = 0;
+
+		int last_space = -1;
+		int word_start_g = 0;
+		int line_start = 0;
+		int line_start_g = 0;
+		for (int c_id = 0; c_id < text.size(); c_id++)
 		{
 			uint32_t gId = font.cmap.charGlyphs[text[c_id]];
-			      const TTFSimpleGlyph &glyph = font.glyphs[gId];
-      float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
-      int cur_min_x = int(glyph_scale * float(glyph.xMin));
-      int cur_min_y = int(glyph_scale * float(glyph.yMin));
+			const TTFSimpleGlyph &glyph = font.glyphs[gId];
+			float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
+			int cur_min_x = int(glyph_scale * float(glyph.xMin));
+			int cur_min_y = int(glyph_scale * float(glyph.yMin));
 
-      min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
-      min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
-      max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
-      max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
+			min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
+			min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
+			max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
+			max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
 
-      int2 g_size = int2(glyph_scale*sz) + int2(1,1);
-      int pos_y = cur_y-cur_min_y+font.line_height*glyph_scale-g_size.y;
-      int2 g_pos = int2(cur_x+cur_min_x, pos_y);
+			int2 g_size = int2(glyph_scale * sz) + int2(1, 1);
+			int pos_y = cur_y - cur_min_y + font.line_height * glyph_scale - g_size.y;
+			int2 g_pos = int2(cur_x + cur_min_x, pos_y);
 
-      cur_x += glyph.advance.advanceWidth * glyph_scale + 1;
-      if (cur_x > size.x)
-      {
-        cur_x = glyph.advance.advanceWidth * glyph_scale + 1;
-        cur_y += font.line_height * glyph_scale + 1;
-        g_pos = int2(0, pos_y + font.line_height * glyph_scale + 1);
-      }
+			if (text[c_id] == ' ' || text[c_id] == '\t')
+			{
+				last_space = c_id;
+				word_start_g = glyphs.size();
+				cur_x += glyph.advance.advanceWidth * glyph_scale;
+				if (cur_x > size.x)
+				{
+					line_start = c_id+1;
+					line_start_g = glyphs.size();
+					cur_x = 0;
+					cur_y += font.line_height * glyph_scale;
+				}	
+				continue;
+			}
+
+			if (text[c_id] == '\n')
+			{
+				last_space = c_id;
+				word_start_g = glyphs.size();
+				line_start = c_id+1;
+				line_start_g = glyphs.size();
+				cur_x = 0;
+				cur_y += font.line_height * glyph_scale;
+				continue;	
+			}
+
+			cur_x += glyph.advance.advanceWidth * glyph_scale;
+			if (cur_x > size.x)
+			{
+				// start from the beginning of the word, move it to
+				// the next line
+				if (last_space > line_start)
+				{
+					cur_x = 0;
+					cur_y += font.line_height * glyph_scale;
+					int y_off = font.line_height * glyph_scale;
+					int x_off = -glyph_positions[word_start_g].x;
+					for (int wc_id = word_start_g; wc_id < glyphs.size(); wc_id++)
+					{
+						glyph_positions[wc_id] += int2(x_off, y_off);
+						cur_x += glyphs[wc_id].size.x;
+					}
+					g_pos = int2(cur_x + cur_min_x, pos_y + y_off);
+					cur_x += glyph.advance.advanceWidth * glyph_scale;
+				}
+				else //the word in too large, we have to split it
+				{
+					cur_x = glyph.advance.advanceWidth * glyph_scale;
+					cur_y += font.line_height * glyph_scale;
+					g_pos = int2(0, pos_y + font.line_height * glyph_scale);
+				}
+			}
 
 			Glyph g;
 			g.size = g_size;
@@ -79,16 +126,22 @@ namespace LiteFigure
 			g.glyph_id = gId;
 			glyphs.push_back(g);
 			glyph_positions.push_back(g_pos);
-			proper_size = max(proper_size, g_pos + g_size);
-			//printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
+			// printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
 		}
 
-		//rescale so that text fits into the given size
+		//calculate proper size
+		int2 proper_size = int2(0, 0);
+		for (int i=0;i<glyphs.size();i++)
+		{
+			proper_size = max(proper_size, glyph_positions[i] + glyphs[i].size);
+		}
+
+		// rescale so that text fits into the given size
 		if (is_valid_size(force_size))
 		{
 			float scale = std::min(float(force_size.x) / float(proper_size.x), float(force_size.y) / float(proper_size.y));
-			int2 new_size = int2(0,0);
-			for (int i=0;i<glyphs.size();i++)
+			int2 new_size = int2(0, 0);
+			for (int i = 0; i < glyphs.size(); i++)
 			{
 				glyph_positions[i] *= scale;
 				glyphs[i].size *= scale;
