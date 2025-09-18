@@ -9,7 +9,7 @@ namespace LiteFigure
 	//not a cmap table structure from the file, but our format to use
   struct TTFCmapTable
   {
-    uint16_t charGlyphs[256]; //map from char code to glyph index, only 256 chars supported
+    uint16_t charGlyphs[256] = {0}; //map from char code to glyph index, only 256 chars supported
     std::map<uint32_t, uint16_t> unicodeToGlyph; //map from 4-bytes unicode codepoint to glyph index
   };
 
