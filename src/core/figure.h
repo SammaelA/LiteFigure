@@ -98,6 +98,9 @@ namespace LiteFigure
     FigurePtr figure;
     float4 crop  = float4(0,0,1,1);
     float2 scale = float2(1,1);
+    float rotation = 0; // in degrees
+    bool mirror_x = false;
+    bool mirror_y = false;
   };
 
   struct PrimitiveImage : public Primitive

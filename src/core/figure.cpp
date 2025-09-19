@@ -274,6 +274,9 @@ namespace LiteFigure
     size = blk->get_ivec2("size", size);
     crop = blk->get_vec4("crop", crop);
     scale = blk->get_vec2("scale", scale);
+    rotation = blk->get_double("rotation", rotation);
+    mirror_x = blk->get_bool("mirror_x", mirror_x);
+    mirror_y = blk->get_bool("mirror_y", mirror_y);
 
     int figure_block_id = -1;
     for (int i = 0; i < blk->size(); i++)
@@ -354,11 +357,23 @@ namespace LiteFigure
           float y1 = transform->crop.w;
           crop_trans = float3x3(x1 - x0, 0, x0, 0, y1 - y0, y0, 0, 0, 1);
         }
+        float3x3 rot = float3x3(1,0,0,0,1,0,0,0,1);
+        if (transform->rotation != 0)
+        {
+          float a = transform->rotation * (LiteMath::M_PI / 180.0f);
+          float c = cos(a);
+          float s = sin(a);
+          rot = float3x3(1,0,0.5,0,1,0.5,0,0,1) * float3x3(c, -s, 0, s, c, 0, 0, 0, 1) * float3x3(1,0,-0.5,0,1,-0.5,0,0,1);
+        }
+        float3x3 mirror = float3x3(transform->mirror_x ? -1 : 1, 0, transform->mirror_x ? 1 : 0,
+                                   0, transform->mirror_y ? -1 : 1, transform->mirror_y ? 1 : 0, 
+                                   0, 0, 1);
         std::vector<Instance> instances_to_transform;
         prepare_instances_rec(transform->figure, pos, instances_to_transform);
+        float3x3 transform = mirror*rot*crop_trans;
         for (auto &inst : instances_to_transform)
         {
-          inst.data.uv_transform = crop_trans * inst.data.uv_transform;
+          inst.data.uv_transform = transform * inst.data.uv_transform;
           instances.push_back(inst);
         }
       }

@@ -1,0 +1,52 @@
+{
+  type:e_FigureType = Grid
+  size:i2 = 2048,1024
+  row {
+    elem {
+        type:e_FigureType = Transform
+        rotation:r = 0
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        rotation:r = 45
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        rotation:r = 90
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        rotation:r = 135
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+  }
+  row {
+    elem {
+        type:e_FigureType = Transform
+        mirror_x:b = false
+        mirror_y:b = false
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        mirror_x:b = true
+        mirror_y:b = false
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        mirror_x:b = false
+        mirror_y:b = true
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+    elem {
+        type:e_FigureType = Transform
+        mirror_x:b = true
+        mirror_y:b = true
+        figure { type:e_FigureType = PrimitiveImage path:s = "images/Bunny.png" }
+    }
+  }
+}

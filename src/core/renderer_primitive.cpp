@@ -40,8 +40,9 @@ namespace LiteFigure
 		{
 			for (int x = 0; x < prim.size.x; x++)
 			{
-				float3 uv = instance.uv_transform * float3(x / float(prim.size.x), y / float(prim.size.y), 1);
-				float4 c = prim.image.sample(prim.sampler, float2(uv.x, uv.y));
+				float3 uv3 = instance.uv_transform * float3(x / float(prim.size.x), y / float(prim.size.y), 1);
+				float2 uv = LiteMath::clamp(float2(uv3.x, uv3.y), float2(0, 0), float2(1, 1));
+				float4 c = prim.image.sample(prim.sampler, uv);
 				uint2 pixel = uint2(x + instance.pos.x, y + instance.pos.y);
 				out[pixel] = alpha_blend(c, out[pixel]);
 			}
