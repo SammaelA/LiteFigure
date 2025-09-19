@@ -71,6 +71,10 @@ namespace LiteFigure
 		float x0 = p0.x * w, y0 = p0.y * h;
 		float x1 = p1.x * w, y1 = p1.y * h;
 		float T = prim.thickness * fmax(w, h);
+		int length_pixel = length(float2(x1 - x0, y1 - y0));
+		int dash_length_pixel = prim.style == LineStyle::Dashed ? prim.style_pattern.x * fmax(w, h) : T;
+		int dash_space_pixel = prim.style_pattern.y * fmax(w, h);
+		int dash_step_pixel = dash_length_pixel + dash_space_pixel;
 		for (int y = 0; y < h; ++y)
 		{
 			for (int x = 0; x < w; ++x)
@@ -89,6 +93,28 @@ namespace LiteFigure
 					// Optional: for anti-aliasing, fade edge
 					float alpha = prim.antialiased ? std::min(1.0f, T / 2.0f - dist) : 1;
 					float4 c = prim.color * float4(1, 1, 1, alpha);
+
+					if (prim.style == LineStyle::Dashed)
+					{
+						int t_pixel = int(t * length_pixel);
+						c.w = t_pixel % dash_step_pixel < dash_length_pixel ? 1 : 0;
+					}
+					else if (prim.style == LineStyle::Dotted)
+					{
+						int t_pixel = int(t * length_pixel);
+						if (t_pixel % dash_step_pixel < dash_length_pixel)
+						{
+							float t_center = float((t_pixel/dash_step_pixel) * dash_step_pixel + 0.5f*dash_length_pixel)/length_pixel;
+							float2 center = float2(x0 + t_center * dx, y0 + t_center * dy);
+							float dist_center = sqrtf((px - center.x) * (px - center.x) + (py - center.y) * (py - center.y));
+							c.w = dist_center < T / 2.0f ? 1 : 0;
+						}
+						else
+						{
+							c.w = 0;
+						}
+					}
+
 					uint2 pixel = uint2(x + instance.pos.x, y + instance.pos.y);
 					out[pixel] = alpha_blend(c, out[pixel]);
 				}

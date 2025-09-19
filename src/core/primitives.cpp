@@ -56,6 +56,8 @@ namespace LiteFigure
     start = blk->get_vec2("start", start);
     end = blk->get_vec2("end", end);
     antialiased = blk->get_bool("antialiased", antialiased);
+    style_pattern = blk->get_vec2("style_pattern", style_pattern);
+    style = (LineStyle)blk->get_enum("style", (uint32_t)style);
 
     if (size.x < 1 || size.y < 1)
     {

@@ -1,0 +1,73 @@
+{
+  type:e_FigureType = Grid
+  row {
+    elem {
+      size:i2 = 1024, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0,1
+      end:p2 = 1,0
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dashed
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+    elem {
+      size:i2 = 1024, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0,1
+      end:p2 = 1,0
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dotted
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+  }
+  row {
+    elem {
+      size:i2 = 512, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0.5,0
+      end:p2 = 0.5,1
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dashed
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+    elem {
+      size:i2 = 512, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0.5,0
+      end:p2 = 0.5,1
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dotted
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+    elem {
+      size:i2 = 512, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0, 0.25
+      end:p2 = 1, 0.25
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dashed
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+    elem {
+      size:i2 = 512, 1024
+      color:p4 = 1,1,1,1
+      start:p2 = 0, 0.75
+      end:p2 = 1, 0.75
+      thickness:r = 0.01
+      antialiased:b = false
+      style:e_LineStyle = Dotted
+      style_pattern:p2 = 0.02,0.02
+      type:e_FigureType = Line
+    }
+  }
+}

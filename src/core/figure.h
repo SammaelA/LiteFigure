@@ -117,15 +117,24 @@ namespace LiteFigure
     float4 color = float4(1,0,0,1);
   };
 
+  enum class LineStyle
+  {
+    Solid,
+    Dashed,
+    Dotted
+  };
+
   struct Line : public Primitive
   {
     virtual FigureType getType() const override { return FigureType::Line; }
     virtual bool load(const Block *blk) override;
 
+    LineStyle style = LineStyle::Solid;
     float4 color = float4(0,0,0,1);
-    // start, end and thickness are in normalized coordinates (0..1)
+    // all in normalized coordinates (0..1)
     float2 start = float2(0,0);
     float2 end = float2(1,1);
+    float2 style_pattern = float2(1,0); // dash length/dot radius, space length
     float thickness = 0.01f;
     bool antialiased = true;
   };
