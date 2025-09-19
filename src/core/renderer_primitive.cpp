@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include <chrono>
 
 namespace LiteFigure
 {
@@ -61,6 +62,7 @@ namespace LiteFigure
 
 	void Renderer::render(const Line &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
+		auto t1 = std::chrono::high_resolution_clock::now();
 		float2 p0 = to_float2(instance.uv_transform * float3(prim.start.x, prim.start.y, 1));
 		float2 p1 = to_float2(instance.uv_transform * float3(prim.end.x, prim.end.y, 1));
 		p0 = LiteMath::clamp(p0, float2(0, 0), float2(1, 1));
@@ -70,18 +72,38 @@ namespace LiteFigure
 		int h = prim.size.y;
 		float x0 = p0.x * w, y0 = p0.y * h;
 		float x1 = p1.x * w, y1 = p1.y * h;
+		float dx = x1 - x0, dy = y1 - y0;
 		float T = prim.thickness * fmax(w, h);
-		int length_pixel = length(float2(x1 - x0, y1 - y0));
+		int length_pixel = length(float2(dx,dy));
 		int dash_length_pixel = prim.style == LineStyle::Dashed ? prim.style_pattern.x * fmax(w, h) : T;
 		int dash_space_pixel = prim.style_pattern.y * fmax(w, h);
 		int dash_step_pixel = dash_length_pixel + dash_space_pixel;
-		for (int y = 0; y < h; ++y)
+		bool horizontal = std::abs(x1 - x0) > fmax(w, h)*std::abs(y1 - y0);
+		float perp_x = -dy / length_pixel;
+    float perp_y = dx / length_pixel;
+		for (int y = std::max(0, int(std::min(y0, y1) - T / 2.0f)); y < std::min(h, int(std::max(y0, y1) + T / 2.0f)); ++y)
 		{
-			for (int x = 0; x < w; ++x)
+			int x_start = 0;
+			int x_end = w;
+			if (horizontal)
+			{
+				x_start = std::max(0, int(std::min(x0, x1) - T / 2.0f));
+				x_end = std::min(w, int(std::max(x0, x1) + T / 2.0f));
+			}
+			else
+			{
+				float x00 = (x0 - perp_x * T / 2.0f) + dx * ((y - (y0 - perp_y * T / 2.0f)) / dy);
+				float x01 = (x0 - perp_x * T / 2.0f) + dx * ((y+1 - (y0 - perp_y * T / 2.0f)) / dy);
+				float x10 = (x0 + perp_x * T / 2.0f) + dx * ((y - (y0 + perp_y * T / 2.0f)) / dy);
+				float x11 = (x0 + perp_x * T / 2.0f) + dx * ((y+1 - (y0 + perp_y * T / 2.0f)) / dy);
+				x_start = std::max(0, int(std::min(std::min(x00, x01), std::min(x10, x11))));
+				x_end = std::min(w, int(std::max(std::max(x00, x01), std::max(x10, x11))));
+			}
+
+			for (int x = x_start; x < x_end; ++x)
 			{
 				float px = x + 0.5f, py = y + 0.5f;
 				// Compute projection parameter t
-				float dx = x1 - x0, dy = y1 - y0;
 				float len2 = dx * dx + dy * dy;
 				float t = len2 > 0 ? ((px - x0) * dx + (py - y0) * dy) / len2 : 0;
 				t = fmax(0, fmin(1, t));
@@ -120,6 +142,9 @@ namespace LiteFigure
 				}
 			}
 		}
+		auto t2 = std::chrono::high_resolution_clock::now();
+		float time_ms = std::chrono::duration<float, std::milli>(t2 - t1).count();
+		//printf("line render time: %f ms\n", time_ms);
 	}
 
 	void Renderer::render(const Circle &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
