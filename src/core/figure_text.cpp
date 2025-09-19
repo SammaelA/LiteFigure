@@ -24,10 +24,10 @@ namespace LiteFigure
 
 	bool Text::load(const Block *blk)
 	{
-		text = blk->get_string("text");
-		font_name = blk->get_string("font_name");
-		color = blk->get_vec4("color");
-		background_color = blk->get_vec4("background_color");
+		text = blk->get_string("text", text);
+		font_name = blk->get_string("font_name", font_name);
+		color = blk->get_vec4("color", color);
+		background_color = blk->get_vec4("background_color", background_color);
 		size = blk->get_ivec2("size", size);
 		retain_width = blk->get_bool("retain_width", retain_width);
 		retain_height = blk->get_bool("retain_height", retain_height);
@@ -50,6 +50,9 @@ namespace LiteFigure
 
 	int2 Text::calculateSize(int2 force_size)
 	{
+		glyphs.clear();
+		glyph_positions.clear();
+		
 		// external force_size has highest priority, but if
 		// figure size is explicitly set, it is forced to children
 		if (!is_valid_size(force_size) && is_valid_size(size))
@@ -153,7 +156,7 @@ namespace LiteFigure
 			g.glyph_id = gId;
 			glyphs.push_back(g);
 			glyph_positions.push_back(g_pos);
-			// printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
+			printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
 		}
 
 		line_ends.push_back(glyphs.size()-1);
@@ -219,11 +222,12 @@ namespace LiteFigure
 		if (is_valid_size(force_size))
 		{
 			float scale = std::min(float(force_size.x) / float(proper_size.x), float(force_size.y) / float(proper_size.y));
-			int2 new_size = proper_size * scale;
+			int2 new_size = int2(scale*proper_size.x, scale*proper_size.y);
+			printf("scale %f, proper size %d %d, new size %d %d\n", scale, proper_size.x, proper_size.y, new_size.x, new_size.y);
 			for (int i = 0; i < glyphs.size(); i++)
 			{
-				glyph_positions[i] *= scale;
-				glyphs[i].size *= scale;
+				glyph_positions[i] = int2(float2(glyph_positions[i]) * scale);
+				glyphs[i].size = int2(float2(glyphs[i].size) * scale);
 				new_size = max(new_size, glyph_positions[i] + glyphs[i].size);
 			}
 			size = new_size;

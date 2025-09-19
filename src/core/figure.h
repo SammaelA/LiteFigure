@@ -203,12 +203,12 @@ namespace LiteFigure
 
     void prepare_glyphs(int2 pos, std::vector<Instance> &out_instances);
 
-    int font_size = 128;
+    int font_size = 64;
     std::string text;
-    std::string font_name;
+    std::string font_name = "fonts/times-new-roman-regular.ttf";
     bool retain_width = false;
     bool retain_height = false;
-    float4 color = float4(0,0,0,1);
+    float4 color = float4(1,1,1,1);
     float4 background_color = float4(0,0,0,0);
     TextAlignmentX alignment_x = TextAlignmentX::Left;
     TextAlignmentY alignment_y = TextAlignmentY::Top;
