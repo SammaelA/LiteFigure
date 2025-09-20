@@ -1169,9 +1169,22 @@ namespace LiteFigure
     }
 
     fix_space_glyphs(font);
-    font.line_height = hheaTable.ascent - hheaTable.descent + hheaTable.lineGap;
+    int2 box_min_max = int2(1000000, -1000000);
+    std::string proper_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~";
+    for (auto i : proper_chars)
+    {
+      const auto &glyph = font.glyphs[font.cmap.charGlyphs[i]];
+      box_min_max[0] = std::min<int>(box_min_max[0], glyph.yMin);
+      box_min_max[1] = std::max<int>(box_min_max[1], glyph.yMax);
+    }
+
+    //proper line height, based on all chars, usually too large
+    //font.line_height = hheaTable.ascent - hheaTable.descent + hheaTable.lineGap;
+
+    //line height for typical text
+    font.line_height = box_min_max[1] - box_min_max[0] + hheaTable.lineGap;
     font.ascent = hheaTable.ascent;
-    font.descent = hheaTable.descent;
+    font.descent = hheaTable.descent - hheaTable.lineGap;
 
     return font;
   }
