@@ -26,7 +26,7 @@ namespace LiteFigure
     uint32_t g = std::clamp((uint32_t)(color.y * 255.0f), 0u, 255u);
     uint32_t b = std::clamp((uint32_t)(color.z * 255.0f), 0u, 255u);
     uint32_t a = 255 - std::clamp((uint32_t)(color.w * 255.0f), 0u, 255u);
-    return (a << 24) | (b << 16) | (g << 8) | r;
+    return (a << 24) | (r << 16) | (g << 8) | b;
   }
 
   static inline uint32_t float4_to_RGBA8_color(float4 color, float a_gammaInv)
@@ -69,7 +69,7 @@ namespace LiteFigure
     }
   }
 
-  int pdf_add_image_file_flip(struct pdf_doc *pdf, struct pdf_object *page, int x, int y, int w, int h, const char *filename)
+  int pdf_add_image_file_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float w, float h, const char *filename)
   {
     return pdf_add_image_file(pdf, page, x, document_height_points - y - h, w, h, filename);
   }
@@ -78,6 +78,12 @@ namespace LiteFigure
                         uint32_t colour)
   {
     return pdf_add_text(pdf, page, text, size, xoff, document_height_points - yoff, colour);
+  }
+
+  int pdf_add_line_flip(struct pdf_doc *pdf, struct pdf_object *page, float x1, float y1, float x2, float y2, float width, 
+                        uint32_t colour)
+  {
+    return pdf_add_line(pdf, page, x1, document_height_points - y1, x2, document_height_points - y2, width, colour);
   }
 
   bool save_PrimitiveImage_to_pdf(std::shared_ptr<PrimitiveImage> prim, InstanceData inst, struct pdf_doc *pdf)
@@ -133,6 +139,20 @@ namespace LiteFigure
     return true;
   }
 
+  bool save_Line_to_pdf(std::shared_ptr<Line> prim, InstanceData inst, struct pdf_doc *pdf)
+  {
+    int res = pdf_add_line_flip(pdf, nullptr, 
+                                PPP*(inst.pos.x + inst.size.x*prim->start.x), PPP*(inst.pos.y + inst.size.y*prim->start.y),
+                                PPP*(inst.pos.x + inst.size.x*  prim->end.x), PPP*(inst.pos.y + inst.size.y*  prim->end.y),
+                                PPP*prim->thickness*std::max(inst.size.x, inst.size.y), float4_to_PDF_color(prim->color));
+    if (res < 0)
+    {
+      fprintf(stderr, "[PDFGen]Error adding line: %d\n", res);
+      return false;
+    }
+    return true;
+  }
+
   void save_figure_to_pdf(FigurePtr fig, const std::string &filename)
   {
     Renderer renderer;
@@ -158,6 +178,7 @@ namespace LiteFigure
 
     for (auto &inst : instances)
     {
+      //const auto &inst = instances[i];
       switch (inst.prim->getType())
       {
       case FigureType::PrimitiveImage:
@@ -165,6 +186,9 @@ namespace LiteFigure
         break;
       case FigureType::Glyph:
         save_Glyph_to_pdf(std::dynamic_pointer_cast<Glyph>(inst.prim), inst.data, pdf);
+        break;
+      case FigureType::Line:
+        save_Line_to_pdf(std::dynamic_pointer_cast<Line>(inst.prim), inst.data, pdf);
         break;
       default:
         printf("[save_figure_to_pdf] Primitive type %d not supported\n", (int)(inst.prim->getType()));

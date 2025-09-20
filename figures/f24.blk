@@ -1,0 +1,65 @@
+{
+  type:e_FigureType = Collage
+  size:i2 = 1024, 1024
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 1,0,0,1
+    start:p2 = 0,0.2
+    end:p2 = 1,0.2
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 1,0,0,1
+    start:p2 = 0,0.5
+    end:p2 = 1,0.5
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 1,0,0,1
+    start:p2 = 0,0.8
+    end:p2 = 1,0.8
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 0,0,1,1
+    start:p2 = 0.2,0
+    end:p2 = 0.2,1
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 0,1,0,1
+    start:p2 = 0.5,0
+    end:p2 = 0.5,1
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+  elem {
+    pos:i2 = 0, 0
+    size:i2 = 1024, 1024
+    color:p4 = 0,0,1,1
+    start:p2 = 0.8,0
+    end:p2 = 0.8,1
+    thickness:r = 0.025
+    antialiased:b = false
+    type:e_FigureType = Line
+  }
+}
