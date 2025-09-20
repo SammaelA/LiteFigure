@@ -20,6 +20,12 @@ namespace LiteFigure
     else                    return colorLDR;
   }
 
+  static inline float4 tonemap(float4 x, float a_gammaInv)
+  {
+    return float4(std::pow(x.x, a_gammaInv), std::pow(x.y, a_gammaInv), 
+                  std::pow(x.z, a_gammaInv), std::pow(x.w, a_gammaInv));
+  }
+
   static inline uint32_t float4_to_PDF_color(float4 color)
   {
     uint32_t r = std::clamp((uint32_t)(color.x * 255.0f), 0u, 255u);
@@ -84,6 +90,12 @@ namespace LiteFigure
                         uint32_t colour)
   {
     return pdf_add_line(pdf, page, x1, document_height_points - y1, x2, document_height_points - y2, width, colour);
+  }
+
+  int pdf_add_filled_rectangle_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float w, float h, 
+                                    uint32_t colour)
+  {
+    return pdf_add_filled_rectangle(pdf, page, x, document_height_points - y - h, w, h, 0, colour, colour);
   }
 
   bool save_PrimitiveImage_to_pdf(std::shared_ptr<PrimitiveImage> prim, InstanceData inst, struct pdf_doc *pdf)
@@ -153,6 +165,19 @@ namespace LiteFigure
     return true;
   }
 
+  bool save_PrimitiveFill_to_pdf(std::shared_ptr<PrimitiveFill> prim, InstanceData inst, struct pdf_doc *pdf)
+  {
+    int res = pdf_add_filled_rectangle_flip(pdf, nullptr, PPP*inst.pos.x, PPP*inst.pos.y, 
+                                            PPP*inst.size.x, PPP*inst.size.y, 
+                                            float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
+    if (res < 0)
+    {
+      fprintf(stderr, "[PDFGen]Error adding rectangle: %d\n", res);
+      return false;
+    }
+    return true;
+  }
+
   void save_figure_to_pdf(FigurePtr fig, const std::string &filename)
   {
     Renderer renderer;
@@ -183,6 +208,9 @@ namespace LiteFigure
       {
       case FigureType::PrimitiveImage:
         save_PrimitiveImage_to_pdf(std::dynamic_pointer_cast<PrimitiveImage>(inst.prim), inst.data, pdf);
+        break;
+      case FigureType::PrimitiveFill:
+        save_PrimitiveFill_to_pdf(std::dynamic_pointer_cast<PrimitiveFill>(inst.prim), inst.data, pdf);
         break;
       case FigureType::Glyph:
         save_Glyph_to_pdf(std::dynamic_pointer_cast<Glyph>(inst.prim), inst.data, pdf);
