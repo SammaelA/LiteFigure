@@ -19,6 +19,8 @@ namespace LiteFigure
                        {"Polygon", (unsigned)FigureType::Polygon},
                        {"Text", (unsigned)FigureType::Text},
                        {"Glyph", (unsigned)FigureType::Glyph},
+                       {"LinePlot", (unsigned)FigureType::LinePlot},
+                       {"LineGraph", (unsigned)FigureType::LineGraph},
                    }; })());
 
   REGISTER_ENUM(LineStyle,
@@ -28,9 +30,6 @@ namespace LiteFigure
                        {"Dashed", (unsigned)LineStyle::Dashed},
                        {"Dotted", (unsigned)LineStyle::Dotted},
                    }; })());
-
-  static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
-  static bool equal(int2 a, int2 b) { return a.x == b.x && a.y == b.y; }
 
   FigurePtr create_error_figure_dummy()
   {
@@ -78,6 +77,12 @@ namespace LiteFigure
       break;
     case FigureType::Glyph:
       fig = std::make_shared<Glyph>();
+      break;
+    case FigureType::LinePlot:
+      fig = std::make_shared<LinePlot>();
+      break;
+    case FigureType::LineGraph:
+      fig = std::make_shared<LineGraph>();
       break;
     default:
       printf("[create_figure] unsupported figure type %d\n", (int)blk->get_enum("type", (unsigned)FigureType::Unknown));
@@ -387,6 +392,16 @@ namespace LiteFigure
     {
       Text *text = dynamic_cast<Text *>(figure.get());
       text->prepare_glyphs(pos, instances);
+    }
+    else if (dynamic_cast<LineGraph *>(figure.get()))
+    {
+      LineGraph *graph = dynamic_cast<LineGraph *>(figure.get());
+      graph->prepare_instances(pos, instances);
+    }
+    else if (dynamic_cast<LinePlot *>(figure.get()))
+    {
+      LinePlot *plot = dynamic_cast<LinePlot *>(figure.get());
+      plot->prepare_instances(pos, instances);
     }
     else
     {

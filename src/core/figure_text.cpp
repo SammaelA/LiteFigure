@@ -45,9 +45,6 @@ namespace LiteFigure
 		return true;
 	}
 
-  static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
-  static bool equal(int2 a, int2 b) { return a.x == b.x && a.y == b.y; }
-
 	int2 Text::calculateSize(int2 force_size)
 	{
 		glyphs.clear();

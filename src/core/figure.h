@@ -20,7 +20,9 @@ namespace LiteFigure
     Circle,
     Polygon,
     Text,
-    Glyph
+    Glyph,
+    LinePlot,
+    LineGraph
   };
   
   struct Figure
@@ -218,6 +220,56 @@ namespace LiteFigure
     std::vector<int2> glyph_positions;
     std::vector<Glyph> glyphs;
   };
+
+  struct LineGraph : public Figure
+  {
+    virtual FigureType getType() const override { return FigureType::LineGraph; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
+    void prepare_instances(int2 pos, std::vector<Instance> &out_instances);
+
+    float4 color = float4(1,0,0,1);
+    float thickness = 0.0075f;
+    bool use_points = true;
+    float point_size = 0.01f;
+    std::vector<float2> values; // in normalized coordinates (0..1)
+  private:
+    std::vector<Line> lines;
+    std::vector<Circle> points;
+  };
+
+  struct LinePlot : public Figure
+  {
+    virtual FigureType getType() const override { return FigureType::LinePlot; }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual bool load(const Block *blk) override;
+    void prepare_instances(int2 pos, std::vector<Instance> &out_instances);
+
+  private:
+    Text header;
+    PrimitiveFill background;
+
+    Text x_label;
+    Line x_axis;
+    std::vector<Text> x_ticks;
+    std::vector<Line> x_tick_lines;
+
+    Text y_label;
+    Line y_axis;
+    std::vector<Text> y_ticks;
+    std::vector<Line> y_tick_lines;
+
+    std::vector<LineGraph> graphs;
+
+    std::shared_ptr<Grid> graph_grid;
+    //std::vector<Text> values;
+    //PrimitiveFill legend_box;
+    //std::vector<Text> legend_labels;
+    //std::vector<Line> legend_lines;
+  };
+
+  static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
+  static bool equal(int2 a, int2 b) { return a.x == b.x && a.y == b.y; }
 
   FigurePtr create_figure_from_blk(const Block *blk);
   LiteImage::Image2D<float4> render_figure_to_image(FigurePtr figure);
