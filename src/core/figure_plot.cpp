@@ -270,6 +270,16 @@ namespace LiteFigure
 
     std::shared_ptr<Collage> body = std::make_shared<Collage>();
     body->size = int2(size.x, plot_proportions.y * size.x);
+    {
+      std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
+      fill->size = size;
+      fill->color = background_color;
+      Collage::Element elem;
+      elem.pos = int2(0,0);
+      elem.size = int2(size.x, size.y);
+      elem.figure = fill;
+      body->elements.push_back(elem);
+    }
     for (auto &line : x_tick_lines)
     {
       Collage::Element elem;
@@ -308,7 +318,7 @@ namespace LiteFigure
       elem.figure = std::make_shared<Line>(y_axis);
       body->elements.push_back(elem);
     }
-    
+
     graph_grid = std::make_shared<Grid>();
     graph_grid->rows.resize(2);
     graph_grid->rows[0].push_back(std::make_shared<Text>(header));
