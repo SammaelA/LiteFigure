@@ -153,8 +153,8 @@ namespace LiteFigure
 		float2 scale = float2(prim.size.x, prim.size.y) / fmax(prim.size.x, prim.size.y);
 		float2 p0 = to_float2(instance.uv_transform * float3(prim.center.x - prim.radius, prim.center.y - prim.radius, 1));
 		float2 p1 = to_float2(instance.uv_transform * float3(prim.center.x + prim.radius, prim.center.y + prim.radius, 1));
-		int min_y = int(floor(fmin(p0.y, p1.y) * prim.size.y));
-		int max_y = int(ceil(fmax(p0.y, p1.y) * prim.size.y));
+		int min_y = int(floor(fmin(p0.y, p1.y) * prim.size.y))- 1;
+		int max_y = int(ceil(fmax(p0.y, p1.y) * prim.size.y)) + 2;
 		for (int y = std::max(0, min_y); y < std::min(prim.size.y, max_y); y++)
 		{
 			for (int x = 0; x < prim.size.x; x++)
