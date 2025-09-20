@@ -98,6 +98,12 @@ namespace LiteFigure
     return pdf_add_filled_rectangle(pdf, page, x, document_height_points - y - h, w, h, 0, colour, colour);
   }
 
+  int pdf_add_ellipse_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float x_radius, float y_radius, 
+                           uint32_t colour)
+  {
+    return pdf_add_ellipse(pdf, page, x, document_height_points - y, x_radius, y_radius, 0, colour, colour);
+  }
+
   bool save_PrimitiveImage_to_pdf(std::shared_ptr<PrimitiveImage> prim, InstanceData inst, struct pdf_doc *pdf)
   {
     static int counter = 0;
@@ -156,7 +162,8 @@ namespace LiteFigure
     int res = pdf_add_line_flip(pdf, nullptr, 
                                 PPP*(inst.pos.x + inst.size.x*prim->start.x), PPP*(inst.pos.y + inst.size.y*prim->start.y),
                                 PPP*(inst.pos.x + inst.size.x*  prim->end.x), PPP*(inst.pos.y + inst.size.y*  prim->end.y),
-                                PPP*prim->thickness*std::max(inst.size.x, inst.size.y), float4_to_PDF_color(prim->color));
+                                PPP*prim->thickness*std::max(inst.size.x, inst.size.y),
+                                float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)
     {
       fprintf(stderr, "[PDFGen]Error adding line: %d\n", res);
@@ -173,6 +180,21 @@ namespace LiteFigure
     if (res < 0)
     {
       fprintf(stderr, "[PDFGen]Error adding rectangle: %d\n", res);
+      return false;
+    }
+    return true;
+  }
+
+  bool save_Circle_to_pdf(std::shared_ptr<Circle> prim, InstanceData inst, struct pdf_doc *pdf)
+  {
+    float center_x = PPP*(inst.pos.x + inst.size.x*prim->center.x);
+    float center_y = PPP*(inst.pos.y + inst.size.y*prim->center.y);
+    float radius = PPP*prim->radius*std::max(inst.size.x, inst.size.y);
+    int res = pdf_add_ellipse_flip(pdf, nullptr, center_x, center_y, radius, radius,
+                                   float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
+    if (res < 0)
+    {
+      fprintf(stderr, "[PDFGen]Error adding circle: %d\n", res);
       return false;
     }
     return true;
@@ -217,6 +239,9 @@ namespace LiteFigure
         break;
       case FigureType::Line:
         save_Line_to_pdf(std::dynamic_pointer_cast<Line>(inst.prim), inst.data, pdf);
+        break;
+      case FigureType::Circle:
+        save_Circle_to_pdf(std::dynamic_pointer_cast<Circle>(inst.prim), inst.data, pdf);
         break;
       default:
         printf("[save_figure_to_pdf] Primitive type %d not supported\n", (int)(inst.prim->getType()));
