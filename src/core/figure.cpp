@@ -454,14 +454,16 @@ namespace LiteFigure
       return;
     }
 
-    // if different conversions are available (e.g. save to svg
-    // or pdf), they can be selected here
-    bool should_render = true;
+    std::string ext = filename.substr(filename.find_last_of(".") + 1);
 
-    if (should_render)
+    if (ext == "bmp" || ext == "png")
     {
       LiteImage::Image2D<float4> out = render_figure_to_image(fig);
       LiteImage::SaveImage(filename.c_str(), out);
+    }
+    else if (ext == "pdf")
+    {
+      save_figure_to_pdf(fig, filename);
     }
   }
 }

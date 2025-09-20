@@ -1,0 +1,67 @@
+{
+  type:e_FigureType = Grid
+  row {
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_1.png"
+      size:i2 = 512, 512
+    }
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_2.png"
+      size:i2 = 512, 512
+    }
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_3.png"
+      size:i2 = 512, 512
+    }
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/block_4.png"
+      size:i2 = 512, 512
+    }
+  }
+  row {
+    elem {
+      type:e_FigureType = Text
+      text:s = "Dirt"
+      size:i2 = 512, 100
+      font_size:i = 50
+      retain_height:b = true
+      retain_width:b = true
+      alignment_x:e_TextAlignmentX = Left
+      alignment_y:e_TextAlignmentY = Top
+    }
+    elem {
+      type:e_FigureType = Text
+      text:s = "Sand"
+      size:i2 = 512, 100
+      font_size:i = 50
+      retain_height:b = true
+      retain_width:b = true
+      alignment_x:e_TextAlignmentX = Right
+      alignment_y:e_TextAlignmentY = Top
+    }
+    elem {
+      type:e_FigureType = Text
+      text:s = "Ice"
+      size:i2 = 512, 100
+      font_size:i = 50
+      retain_height:b = true
+      retain_width:b = true
+      alignment_x:e_TextAlignmentX = Center
+      alignment_y:e_TextAlignmentY = Bottom
+    }
+    elem {
+      type:e_FigureType = Text
+      text:s = "Cobblestone"
+      size:i2 = 512, 100
+      font_size:i = 50
+      retain_height:b = true
+      retain_width:b = true
+      alignment_x:e_TextAlignmentX = Center
+      alignment_y:e_TextAlignmentY = Center
+    }
+  }
+}

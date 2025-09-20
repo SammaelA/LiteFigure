@@ -154,9 +154,11 @@ namespace LiteFigure
 			g.color = color;
 			g.font_name = font_name;
 			g.glyph_id = gId;
+			g.character = text[c_id];
+			g.font_size = font_size;
 			glyphs.push_back(g);
 			glyph_positions.push_back(g_pos);
-			printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
+			//printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
 		}
 
 		line_ends.push_back(glyphs.size()-1);
@@ -223,11 +225,18 @@ namespace LiteFigure
 		{
 			float scale = std::min(float(force_size.x) / float(proper_size.x), float(force_size.y) / float(proper_size.y));
 			int2 new_size = int2(scale*proper_size.x, scale*proper_size.y);
-			printf("scale %f, proper size %d %d, new size %d %d\n", scale, proper_size.x, proper_size.y, new_size.x, new_size.y);
+
+			if (retain_width)
+				new_size.x = std::max(new_size.x, force_size.x);
+			if (retain_height)
+				new_size.y = std::max(new_size.y, force_size.y);
+
+			//printf("scale %f, proper size %d %d, new size %d %d\n", scale, proper_size.x, proper_size.y, new_size.x, new_size.y);
 			for (int i = 0; i < glyphs.size(); i++)
 			{
 				glyph_positions[i] = int2(float2(glyph_positions[i]) * scale);
 				glyphs[i].size = int2(float2(glyphs[i].size) * scale);
+				glyphs[i].font_size *= scale;
 				new_size = max(new_size, glyph_positions[i] + glyphs[i].size);
 			}
 			size = new_size;
