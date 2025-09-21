@@ -99,7 +99,6 @@ namespace LiteFigure
     Text default_text;
     default_text.alignment_x = TextAlignmentX::Center;
     default_text.alignment_y = TextAlignmentY::Center;
-    default_text.background_color = background_color;
     default_text.color = blk->get_vec4("text_color", float4(0,0,0,1));
     default_text.font_name = blk->get_string("font_name", "fonts/times-new-roman-regular.ttf");
     default_text.font_size = blk->get_int("font_size", 64);
@@ -193,12 +192,14 @@ namespace LiteFigure
       x_label.load(blk->get_block("x_label"));
     }
 
+    std::string x_tick_format = "%f";
     std::vector<float> x_tick_values;
     int tick_count = 5;
     if (blk->get_block("x_ticks"))
     {
       const Block *x_ticks_blk = blk->get_block("x_ticks");
       x_ticks_blk->get_arr("values", x_tick_values);
+      x_tick_format = x_ticks_blk->get_string("format", x_tick_format);
       tick_count = x_ticks_blk->get_int("count", tick_count);
     }
     if (x_tick_values.empty())
@@ -209,7 +210,7 @@ namespace LiteFigure
         x_tick_values.push_back(x_range.x + step * (i+0.5f));
       }
     }
-    printf("created %d x tick values\n", (int)x_tick_values.size());
+
     x_tick_lines.resize(x_tick_values.size());
     for (int i = 0; i < x_tick_values.size(); i++)
     {
@@ -220,6 +221,24 @@ namespace LiteFigure
       }
       x_tick_lines[i].start = float2((x_tick_values[i] - x_range.x) / (x_range.y - x_range.x), 1);
       x_tick_lines[i].end = float2((x_tick_values[i] - x_range.x) / (x_range.y - x_range.x), 0);
+    }
+    x_ticks.resize(x_tick_values.size());
+    int tick_box_size = size.x/x_tick_values.size();
+    for (int i = 0; i < x_tick_values.size(); i++)
+    {
+      x_ticks[i] = default_text;
+      x_ticks[i].size = int2(tick_box_size, -1);
+      x_ticks[i].retain_width = true;
+      if (blk->get_block("x_ticks"))
+      {
+        x_ticks[i].load(blk->get_block("x_ticks"));
+      }
+
+      constexpr int MAX_TICK_TEXT_LEN = 16;
+      char buf[MAX_TICK_TEXT_LEN];
+      snprintf(buf, MAX_TICK_TEXT_LEN, x_tick_format.c_str(), x_tick_values[i]);
+      x_ticks[i].text = buf;
+      x_ticks[i].calculateSize();
     }
 
     y_axis = default_line;
@@ -232,18 +251,20 @@ namespace LiteFigure
 
     y_label = default_text;
     y_label.retain_height = true;
-    y_label.size = int2(1, size.y);
+    y_label.size = int2(1000, size.y);
     if (blk->get_block("y_label"))
     {
       y_label.load(blk->get_block("y_label"));
     }
 
+    std::string y_tick_format = "%f";
     std::vector<float> y_tick_values;
     tick_count = 5;
     if (blk->get_block("y_ticks"))
     {
       const Block *y_ticks_blk = blk->get_block("y_ticks");
       y_ticks_blk->get_arr("values", y_tick_values);
+      y_tick_format = y_ticks_blk->get_string("format", y_tick_format);
       tick_count = y_ticks_blk->get_int("count", tick_count);
     }
     if (y_tick_values.empty())
@@ -254,18 +275,35 @@ namespace LiteFigure
         y_tick_values.push_back(y_range.x + step * (i+0.5f));
       }
     }
-    printf("created %d y tick values\n", (int)y_tick_values.size());
+
     y_tick_lines.resize(y_tick_values.size());
     for (int i = 0; i < y_tick_values.size(); i++)
     {
       y_tick_lines[i] = default_line;
-      printf("line size %d %d\n", y_tick_lines[i].size.x, y_tick_lines[i].size.y);
       if (blk->get_block("y_tick_lines"))
       {
         y_tick_lines[i].load(blk->get_block("y_tick_lines"));
       }
       y_tick_lines[i].start = float2(0, 1-(y_tick_values[i] - y_range.x) / (y_range.y - y_range.x));
       y_tick_lines[i].end = float2(1, 1-(y_tick_values[i] - y_range.x) / (y_range.y - y_range.x));
+    }
+    y_ticks.resize(y_tick_values.size());
+    tick_box_size = size.y/y_tick_values.size();
+    for (int i = 0; i < y_tick_values.size(); i++)
+    {
+      y_ticks[i] = default_text;
+      y_ticks[i].size = int2(1000,-1);
+      if (blk->get_block("y_ticks"))
+      {
+        y_ticks[i].load(blk->get_block("y_ticks"));
+      }
+
+      constexpr int MAX_TICK_TEXT_LEN = 16;
+      char buf[MAX_TICK_TEXT_LEN];
+      snprintf(buf, MAX_TICK_TEXT_LEN, y_tick_format.c_str(), y_tick_values[i]);
+      y_ticks[i].text = buf;
+
+      int2 real_size = y_ticks[i].calculateSize();
     }
 
     std::shared_ptr<Collage> body = std::make_shared<Collage>();
@@ -319,10 +357,80 @@ namespace LiteFigure
       body->elements.push_back(elem);
     }
 
-    graph_grid = std::make_shared<Grid>();
-    graph_grid->rows.resize(2);
-    graph_grid->rows[0].push_back(std::make_shared<Text>(header));
-    graph_grid->rows[1].push_back(body);
+    std::shared_ptr<Collage> y_ticks_collage = std::make_shared<Collage>();
+    y_ticks_collage->elements.resize(y_tick_values.size());
+    int y_ticks_collage_max_w = 0;
+    for (int i = 0; i < y_tick_values.size(); i++)
+    {
+      int center = size.y * (y_tick_values[i] - y_range.x) / (y_range.y - y_range.x);
+      Collage::Element elem;
+      elem.pos = int2(0, size.y - center - y_ticks[i].size.y);
+      elem.size = y_ticks[i].size;
+      elem.figure = std::make_shared<Text>(y_ticks[i]);
+      y_ticks_collage->elements[i] = elem;
+      y_ticks_collage_max_w = std::max(y_ticks_collage_max_w, y_ticks[i].size.x);
+    }
+
+    PrimitiveFill y_axis_separator;
+    y_axis_separator.size = int2(y_label.font_size/2, size.y);
+    y_axis_separator.color = background_color;
+
+    std::shared_ptr<Grid> y_axis_grid = std::make_shared<Grid>();
+    y_axis_grid->rows.resize(1);
+    y_axis_grid->rows[0].push_back(std::make_shared<Text>(y_label));
+    y_axis_grid->rows[0].push_back(std::make_shared<PrimitiveFill>(y_axis_separator));
+    y_axis_grid->rows[0].push_back(y_ticks_collage);
+    y_axis_grid->rows[0].push_back(std::make_shared<PrimitiveFill>(y_axis_separator));
+    int y_axis_grid_width = y_axis_grid->calculateSize().x;
+    y_axis_grid_width = y_axis_grid->calculateSize().x;
+
+    std::shared_ptr<Collage> x_ticks_collage = std::make_shared<Collage>();
+    x_ticks_collage->elements.resize(x_tick_values.size()+1);    
+    {
+      auto pf = std::make_shared<PrimitiveFill>();
+      pf->color = background_color;
+      Collage::Element elem;
+      elem.pos = int2(0,0);
+      elem.size = int2(y_axis_grid_width + size.x, 1);
+      elem.figure = pf;
+      x_ticks_collage->elements[0] = elem;
+    }
+    for (int i = 0; i < x_tick_values.size(); i++)
+    {
+      int sh = x_ticks[i].size.x/2;
+      int center = size.x * (x_tick_values[i] - x_range.x) / (x_range.y - x_range.x);
+      Collage::Element elem;
+      elem.pos = int2(y_axis_grid_width+center-sh,0);
+      elem.size = x_ticks[i].size;
+      elem.figure = std::make_shared<Text>(x_ticks[i]);
+      x_ticks_collage->elements[i+1] = elem;
+    }
+
+    std::shared_ptr<Grid> graph_grid = std::make_shared<Grid>();
+    graph_grid->rows.resize(3);
+    graph_grid->rows[0].push_back(y_axis_grid);
+    graph_grid->rows[0].push_back(body);
+    graph_grid->rows[1].push_back(x_ticks_collage);
+    graph_grid->rows[2].push_back(std::make_shared<Text>(x_label));
+
+    std::shared_ptr<Grid> full_graph_grid = std::make_shared<Grid>();
+    full_graph_grid->rows.resize(2);
+    full_graph_grid->rows[0].push_back(std::make_shared<Text>(header));
+    full_graph_grid->rows[1].push_back(graph_grid);
+
+    int2 sz_grid = full_graph_grid->calculateSize();
+    float pad = 0.025f;
+    int2 sz_full = int2(sz_grid.x*(1+2*pad), sz_grid.y*(1+2*pad));
+    int2 pos_plot = int2(sz_grid.x*pad, sz_grid.y*pad);
+
+    full_graph_collage = std::make_shared<Collage>();
+    full_graph_collage->elements.resize(2);
+    full_graph_collage->elements[0].pos = int2(0,0);
+    full_graph_collage->elements[0].size = sz_full;
+    full_graph_collage->elements[0].figure = std::make_shared<PrimitiveFill>(background);
+    full_graph_collage->elements[1].pos = pos_plot;
+    full_graph_collage->elements[1].size = sz_grid;
+    full_graph_collage->elements[1].figure = full_graph_grid;
 
     return true;
   }
@@ -330,7 +438,7 @@ namespace LiteFigure
   void prepare_instances_rec(FigurePtr figure, int2 pos, std::vector<Instance> &instances);
   void LinePlot::prepare_instances(int2 pos, std::vector<Instance> &out_instances)
   {
-    prepare_instances_rec(graph_grid, pos, out_instances);
+    prepare_instances_rec(full_graph_collage, pos, out_instances);
   }
 
   int2 LinePlot::calculateSize(int2 force_size)
@@ -338,7 +446,7 @@ namespace LiteFigure
     if (!is_valid_size(force_size) && is_valid_size(size))
       force_size = size;
     
-    size = graph_grid->calculateSize(force_size);
+    size = full_graph_collage->calculateSize(force_size);
     return size;
   }
 }

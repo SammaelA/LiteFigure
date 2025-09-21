@@ -124,25 +124,46 @@ namespace LiteFigure
       return size;
     }
 
+    //if element size is not set, set it to figure size
+    for (int i = 0; i < elements.size(); i++)
+    {
+      if (!is_valid_size(elements[i].size))
+        elements[i].size = elements[i].figure->calculateSize();
+    }
+
+
     // calculate proper size
     int2 min_val, max_val;
     get_elements_min_max(elements, min_val, max_val);
     int2 proper_size = max_val - min_val;
 
-    if (!is_valid_size(force_size))
-      force_size = proper_size;
+    if (verbose)
+      printf("[Collage] %d elems, min %d %d, max %d %d, proper %d %d\n", (int)elements.size(), min_val.x, min_val.y, max_val.x, max_val.y, proper_size.x, proper_size.y);
 
     // resize all children
-    float2 scale = float2(force_size.x / float(proper_size.x), force_size.y / float(proper_size.y));
-    for (int i = 0; i < elements.size(); i++)
+    if (is_valid_size(force_size))
     {
-      elements[i].pos = int2(float2(elements[i].pos) * scale);
-      elements[i].size = elements[i].figure->calculateSize(int2(float2(elements[i].size) * scale));
+      float2 scale = float2(force_size.x / float(proper_size.x), force_size.y / float(proper_size.y));
+      if (verbose)
+        printf("[Collage] proper size %d %d, force size %d %d, scale %f %f\n", proper_size.x, proper_size.y, force_size.x, force_size.y, scale.x, scale.y);
+      for (int i = 0; i < elements.size(); i++)
+      {
+        elements[i].pos = int2(float2(elements[i].pos) * scale);
+        int2 target_size = max(int2(1,1), int2(float2(elements[i].size) * scale));
+        elements[i].size = elements[i].figure->calculateSize(target_size);
+        if (verbose)
+          printf("[Collage] element %d (type %d), pos %d %d, target size %d %d -> size %d %d\n", i, (int)elements[i].figure->getType(),
+                 elements[i].pos.x, elements[i].pos.y, 
+                 target_size.x, target_size.y, elements[i].size.x, elements[i].size.y);
+      }
     }
 
     // recalculate overall size
     get_elements_min_max(elements, min_val, max_val);
     size = max_val - min_val;
+
+    if (verbose)
+      printf("[Collage] final size %d %d\n", size.x, size.y);
 
     return size;
   }
@@ -189,6 +210,8 @@ namespace LiteFigure
       for (auto &figure : row)
       {
         int2 figure_size = figure->calculateSize();
+        if (verbose)
+          printf("[Grid] figure pos %d %d, size %d %d\n", cur_pos.x, cur_pos.y, figure_size.x, figure_size.y);
         row_height = std::max(row_height, figure_size.y);
         max_pos = max(max_pos, cur_pos + figure_size);
         cur_pos.x += figure_size.x;
@@ -204,6 +227,8 @@ namespace LiteFigure
     }
 
     float2 scale = float2(force_size.x / float(proper_size.x), force_size.y / float(proper_size.y));
+    if (verbose)
+      printf("[Grid] force size %d %d, proper size %d %d, scale %f %f\n", force_size.x, force_size.y, proper_size.x, proper_size.y, scale.x, scale.y);
     min_pos = int2(0, 0);
     max_pos = int2(-1, -1);
     cur_pos = int2(0, 0);
@@ -213,7 +238,11 @@ namespace LiteFigure
       int row_height = 0;
       for (auto &figure : row)
       {
-        int2 figure_size = figure->calculateSize(int2(float2(figure->size) * scale));
+        int2 target_size = max(int2(1,1), int2(float2(figure->size) * scale));
+        int2 figure_size = figure->calculateSize(target_size);
+        if (verbose)
+          printf("[Grid] figure pos %d %d, target size %d %d, size %d %d\n", cur_pos.x, cur_pos.y, 
+            target_size.x, target_size.y, figure_size.x, figure_size.y);
         row_height = std::max(row_height, figure_size.y);
         max_pos = max(max_pos, cur_pos + figure_size);
         cur_pos.x += figure_size.x;

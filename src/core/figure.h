@@ -40,6 +40,7 @@ namespace LiteFigure
     // loads figure data from blk, returns true on success
     virtual bool load(const Block *blk) = 0;
     int2 size = int2(-1,-1);
+    bool verbose = false;
   };
   using FigurePtr = std::shared_ptr<Figure>;
 
@@ -261,7 +262,7 @@ namespace LiteFigure
 
     std::vector<LineGraph> graphs;
 
-    std::shared_ptr<Grid> graph_grid;
+    std::shared_ptr<Collage> full_graph_collage;
     //std::vector<Text> values;
     //PrimitiveFill legend_box;
     //std::vector<Text> legend_labels;

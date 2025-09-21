@@ -22,7 +22,7 @@
     thickness:r = 0.01
   }
   x_ticks {
-    count:i = 5
+    values:arr = {10,20,40,80}
     format:s = "%.1f"
   }
   x_tick_lines {
@@ -36,7 +36,7 @@
     thickness:r = 0.01
   }
   y_ticks {
-    values:arr = {25,30,35,40}
+    values:arr = {20,25,35, 40}
     format:s = "%.2f"
   }
   y_tick_lines {

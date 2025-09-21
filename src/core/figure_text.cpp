@@ -60,11 +60,7 @@ namespace LiteFigure
 
 		int cur_x = 0;
 		int cur_y = 0;
-
-		int min_x = 0;
-		int min_y = 0;
 		int max_x = 0;
-		int max_y = 0;
 
 		int last_space = -1;
 		int word_start_g = 0;
@@ -78,11 +74,6 @@ namespace LiteFigure
 			float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
 			int cur_min_x = int(glyph_scale * float(glyph.xMin));
 			int cur_min_y = int(glyph_scale * float(glyph.yMin));
-
-			min_x = std::min(min_x, cur_x + int(glyph_scale * float(glyph.xMin)));
-			min_y = std::min(min_y, cur_y + int(glyph_scale * float(glyph.yMin)));
-			max_x = std::max(max_x, cur_x + int(glyph_scale * float(glyph.xMax)));
-			max_y = std::max(max_y, cur_y + int(glyph_scale * float(glyph.yMax)));
 
 			int2 g_size = int2(glyph_scale * sz) + int2(1, 1);
 			int pos_y = cur_y - cur_min_y + font.line_height * glyph_scale - g_size.y;
@@ -117,6 +108,9 @@ namespace LiteFigure
 			}
 
 			cur_x += glyph.advance.advanceWidth * glyph_scale;
+			if (verbose)
+				printf("(%c): %d/%d\n", text[c_id], cur_x, size.x);
+
 			if (cur_x > size.x)
 			{
 				// start from the beginning of the word, move it to
@@ -145,6 +139,7 @@ namespace LiteFigure
 					line_ends.push_back(glyphs.size()-1);
 				}
 			}
+			max_x = std::max(max_x, cur_x);
 
 			Glyph g;
 			g.size = g_size;
@@ -155,16 +150,28 @@ namespace LiteFigure
 			g.font_size = font_size;
 			glyphs.push_back(g);
 			glyph_positions.push_back(g_pos);
-			//printf("added glyph %d, pos %d %d, size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y);
+			if (verbose)
+			{
+				printf("added glyph %d, pos %d %d, size %d %d, force size %d %d\n", gId, g_pos.x, g_pos.y, g_size.x, g_size.y,
+							force_size.x, force_size.y);
+			}
 		}
 
 		line_ends.push_back(glyphs.size()-1);
 
 		//calculate proper size
-		int2 proper_size = int2(0, 0);
+		int2 proper_size = int2(max_x+1, 0);
 		for (int i=0;i<glyphs.size();i++)
 		{
-			proper_size = max(proper_size, glyph_positions[i] + glyphs[i].size);
+			proper_size.y = std::max(proper_size.y, glyph_positions[i].y + glyphs[i].size.y);
+			if (verbose)
+			{
+				printf("glyph %d, pos %d %d, size %d %d\n", i, glyph_positions[i].x, glyph_positions[i].y, glyphs[i].size.x, glyphs[i].size.y);
+			}
+		}
+		if (verbose)
+		{
+			printf("proper size %d %d\n", proper_size.x, proper_size.y);
 		}
 		
 		if (retain_width)
@@ -228,7 +235,8 @@ namespace LiteFigure
 			if (retain_height)
 				new_size.y = std::max(new_size.y, force_size.y);
 
-			//printf("scale %f, proper size %d %d, new size %d %d\n", scale, proper_size.x, proper_size.y, new_size.x, new_size.y);
+			if (verbose)
+				printf("scale %f, proper size %d %d, new size %d %d\n", scale, proper_size.x, proper_size.y, new_size.x, new_size.y);
 			for (int i = 0; i < glyphs.size(); i++)
 			{
 				glyph_positions[i] = int2(float2(glyph_positions[i]) * scale);
@@ -236,6 +244,7 @@ namespace LiteFigure
 				glyphs[i].font_size *= scale;
 				new_size = max(new_size, glyph_positions[i] + glyphs[i].size);
 			}
+			font_size *= scale;
 			size = new_size;
 		}
 		else
@@ -243,6 +252,8 @@ namespace LiteFigure
 			size = proper_size;
 		}
 
+		if (verbose)
+			printf("text %d glyphs, size %d %d, font size %d\n", (int)glyphs.size(), size.x, size.y, font_size);
 		return size;
 	}
 
