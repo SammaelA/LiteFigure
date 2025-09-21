@@ -218,7 +218,7 @@ namespace LiteFigure
         max_pos = max(max_pos, cur_pos + figure_size);
         cur_pos.x += figure_size.x;
       }
-      cur_pos.y = row_height;
+      cur_pos.y += row_height;
     }
 
     size = max_pos - min_pos;
