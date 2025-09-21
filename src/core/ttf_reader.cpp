@@ -484,8 +484,7 @@ namespace LiteFigure
     table.fontDirectionHint  = big_to_little_endian< int16_t>(bytes + off); off += 2;
     table.indexToLocFormat   = big_to_little_endian< int16_t>(bytes + off); off += 2;
     table.glyphDataFormat    = big_to_little_endian< int16_t>(bytes + off); off += 2;
-    printf("%08x %d %d %d %d indexToLoc %d\n",
-      table.magicNumber, table.xMin, table.yMin, table.xMax, table.yMax, table.indexToLocFormat);
+
     return table;
   }
 
@@ -497,8 +496,7 @@ namespace LiteFigure
     table.maxGlyphs = big_to_little_endian<uint16_t>(bytes + off); off += 2;
     table.maxPoints = big_to_little_endian<uint16_t>(bytes + off); off += 2;
     table.maxContours = big_to_little_endian<uint16_t>(bytes + off); off += 2;
-    printf("maxp version %08x, maxGlyphs %d, maxPoints %d, maxContours %d\n",
-      table.version, table.maxGlyphs, table.maxPoints, table.maxContours);
+
     return table;
   }
 
@@ -629,15 +627,12 @@ namespace LiteFigure
     uint16_t version = big_to_little_endian<uint16_t>(bytes + off); off += 2;
     uint16_t numberSubtables = big_to_little_endian<uint16_t>(bytes + off); off += 2;
 
-    printf("cmap version %d, numberSubtables %d\n", version, numberSubtables);
     std::vector<SubtableHeader> subtables(numberSubtables);
     for (int i = 0; i < numberSubtables; i++)
     {
       subtables[i].platformID = big_to_little_endian<uint16_t>(bytes + off); off += 2;
       subtables[i].encodingID = big_to_little_endian<uint16_t>(bytes + off); off += 2;
       subtables[i].offset     = big_to_little_endian<uint32_t>(bytes + off); off += 4;
-      printf(" subtable %d: platformID %d, encodingID %d, offset %d\n",
-        i, subtables[i].platformID, subtables[i].encodingID, subtables[i].offset);
     }
 
     //check encoding type to find better match for us
@@ -654,7 +649,6 @@ namespace LiteFigure
         if (format == 4) format4_index = subtable.offset;
         if (format == 12) format12_index = subtable.offset;
       }
-      printf("  subtable format %d\n", format);
     }
 
     
@@ -694,8 +688,6 @@ namespace LiteFigure
     table.metricDataFormat = big_to_little_endian<int16_t>(bytes + off); off += 2;
     table.numOfLongHorMetrics = big_to_little_endian<uint16_t>(bytes + off); off += 2;
 
-    printf("hhea version %08x, ascent %d, descent %d, lineGap %d, numOfLongHorMetrics %d\n",
-      table.version, table.ascent, table.descent, table.lineGap, table.numOfLongHorMetrics);
     return table;
   }
 
@@ -707,13 +699,11 @@ namespace LiteFigure
     {
       metrics[i].advanceWidth = big_to_little_endian<uint16_t>(bytes + off); off += 2;
       metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
-      //printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
     }
     for (int i = numOfLongHorMetrics; i < numGlyphs; i++)
     {
       metrics[i].advanceWidth = metrics[numOfLongHorMetrics - 1].advanceWidth;
       metrics[i].leftSideBearing = big_to_little_endian<int16_t>(bytes + off); off += 2;
-      //printf("hmtx[%d] aw %d lsb %d\n", i, metrics[i].advanceWidth, metrics[i].leftSideBearing);
     }
     return metrics;
   }
@@ -729,7 +719,6 @@ namespace LiteFigure
         all_glyph_locations[glyphIndex] = big_to_little_endian<uint16_t>(bytes + locaTableLocation + glyphIndex * bytesPerEntry) * 2u;
       else
         all_glyph_locations[glyphIndex] = big_to_little_endian<uint32_t>(bytes + locaTableLocation + glyphIndex * bytesPerEntry);
-      //printf("glyph %d offset %d\n", glyphIndex, all_glyph_locations[glyphIndex]);
     }
     return all_glyph_locations;
   }
@@ -1019,17 +1008,11 @@ namespace LiteFigure
     file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
     file.close();
 
-    printf("read %d bytes\n", (int)buffer.size());
     offsetSubtable.scalerType = big_to_little_endian<uint32_t>(buffer.data());
     offsetSubtable.numTables = big_to_little_endian<uint16_t>(buffer.data() + 4);
     offsetSubtable.searchRange = big_to_little_endian<uint16_t>(buffer.data() + 6);
     offsetSubtable.entrySelector = big_to_little_endian<uint16_t>(buffer.data() + 8);
     offsetSubtable.rangeShift = big_to_little_endian<uint16_t>(buffer.data() + 10);
-    printf("scalerType   : 0x%08x\n", offsetSubtable.scalerType);
-    printf("numTables    : %d\n", offsetSubtable.numTables);
-    printf("searchRange  : %d\n", offsetSubtable.searchRange);
-    printf("entrySelector: %d\n", offsetSubtable.entrySelector);
-    printf("rangeShift   : %d\n", offsetSubtable.rangeShift);
 
     table_directories.resize(offsetSubtable.numTables);
     uint32_t cur_off = 12;
@@ -1041,9 +1024,6 @@ namespace LiteFigure
       table.checkSum = big_to_little_endian<uint32_t>(buffer.data() + cur_off + 4);
       table.offset = big_to_little_endian<uint32_t>(buffer.data() + cur_off + 8);
       table.length = big_to_little_endian<uint32_t>(buffer.data() + cur_off + 12);
-      printf("table %02d: tag \'%c%c%c%c\', offset %5d, length %5d\n", i, 
-             table.tag[0], table.tag[1], table.tag[2], table.tag[3], 
-             table.offset, table.length);
       cur_off += 16;
     }
 
