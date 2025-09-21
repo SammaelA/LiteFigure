@@ -343,16 +343,18 @@ namespace LiteFigure
       body->elements.push_back(elem);
     }
     {
+      int offset = 0.5f*fmax(size.x, size.y)*x_axis.thickness;
       Collage::Element elem;
-      elem.pos = int2(0,0);
-      elem.size = int2(size.x, size.y);
+      elem.pos = int2(0,offset);
+      elem.size = int2(size.x, size.y-offset);
       elem.figure = std::make_shared<Line>(x_axis);
       body->elements.push_back(elem);
     }
     {
+      int offset = 0.5f*fmax(size.x, size.y)*y_axis.thickness;
       Collage::Element elem;
-      elem.pos = int2(0,0);
-      elem.size = int2(size.x, size.y);
+      elem.pos = int2(offset,0);
+      elem.size = int2(size.x-offset, size.y);
       elem.figure = std::make_shared<Line>(y_axis);
       body->elements.push_back(elem);
     }
@@ -390,7 +392,7 @@ namespace LiteFigure
       auto pf = std::make_shared<PrimitiveFill>();
       pf->color = background_color;
       Collage::Element elem;
-      elem.pos = int2(0,0);
+      elem.pos = int2(0,0.5f*x_ticks[0].font_size);
       elem.size = int2(y_axis_grid_width + size.x, 1);
       elem.figure = pf;
       x_ticks_collage->elements[0] = elem;

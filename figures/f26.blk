@@ -19,7 +19,8 @@
     text:s = "Size (MB)"
   }
   x_axis {
-    thickness:r = 0.01
+    thickness:r = 0.005
+    color:p4 = 0,0,0,1
   }
   x_ticks {
     values:arr = {10,20,40,80}
@@ -33,7 +34,8 @@
     text:s = "PSNR"
   }
   y_axis {
-    thickness:r = 0.01
+    thickness:r = 0.005
+    color:p4 = 0,0,0,1
   }
   y_ticks {
     values:arr = {20,25,35, 40}
@@ -45,20 +47,20 @@
 
   graph {
     name:s = "Method 1"
-    line {color:p4 = 0.3,0.3,0.3,1}
+    line {color:p4 = 0.3,0.3,0.3,1 thickness:r = 0.005 use_points:b = false}
     x_values:arr = {2, 5, 15, 31, 47, 88}
     y_values:arr = {22,24,26, 28, 30, 32}
   }
   graph {
     name:s = "Method 2"
-    line {color:p4 = 0.5,0.5,0.5,1}
+    line {color:p4 = 0.5,0.5,0.5,1 thickness:r = 0.005 point_size:r = 0.0075}
     x_values:arr = {2, 5, 15, 31, 47, 88}
     y_values:arr = {24,26, 28, 30, 32, 34}
   }
   graph {
     name:s = "My method"
     line {color:p4 = 1, 0, 0,1}
-    x_values:arr = {3, 7, 11, 17}
-    y_values:arr = {21, 28, 34, 39}
+    x_values:arr = {3, 7, 11, 17, 27, 41, 67, 99}
+    y_values:arr = {21, 28, 33, 36, 37, 38.5, 39.5, 40}
   }
 }
