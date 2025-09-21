@@ -1,0 +1,154 @@
+{
+  type:e_FigureType = Grid
+  row {
+    elem {
+      type:e_FigureType = LinePlot
+      size:i2 = 2048,1024
+
+      header { text:s = "Test plot 2" font_size:i = 96 }
+
+      x_label { text:s = "Size (MB)"}
+      y_label { text:s = "PSNR" }
+
+
+      graph {
+        name:s = "Method 1"
+        line {color:p4 = 0.3,0.3,0.3,1}
+        x_values:arr = {2, 5, 15, 31, 47, 88}
+        y_values:arr = {22,24,26, 28, 30, 32}
+      }
+      graph {
+        name:s = "Method 2"
+        line {color:p4 = 0.5,0.5,0.5,1}
+        x_values:arr = {2, 5, 15, 31, 47, 88}
+        y_values:arr = {24,26, 28, 30, 32, 34}
+      }
+      graph {
+        name:s = "My method"
+        line {color:p4 = 1, 0, 0,1}
+        x_values:arr = {3, 7, 11, 17, 27, 41, 67, 99}
+        y_values:arr = {21, 28, 33, 36, 37, 38.5, 39.5, 40}
+      }
+    }
+    elem {
+      type:e_FigureType = Grid
+      size:i2 = 2048,1024
+      row {
+        elem {
+          type:e_FigureType = Collage
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, 512
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_2.png"
+          }
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, -1
+            type:e_FigureType = Text
+            font_size:i = 64
+            text:s = "Reference"
+            color:p4 = 1,1,1,1
+            alignment_x:e_TextAlignmentX = Center
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+          }
+        }
+        elem {
+          type:e_FigureType = Collage
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, 512
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_3.png"
+          }
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, -1
+            type:e_FigureType = Text
+            font_size:i = 64
+            text:s = "Method 1"
+            color:p4 = 1,1,1,1
+            alignment_x:e_TextAlignmentX = Center
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+          }
+        }
+        elem {
+          type:e_FigureType = Collage
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, 512
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_4.png"
+          }
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, -1
+            type:e_FigureType = Text
+            font_size:i = 64
+            text:s = "Method 2"
+            color:p4 = 1,1,1,1
+            alignment_x:e_TextAlignmentX = Center
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+          }
+        }
+        elem {
+          type:e_FigureType = Collage
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, 512
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_5.png"
+          }
+          elem {
+            pos:i2 = 0, 0
+            size:i2 = 512, -1
+            type:e_FigureType = Text
+            font_size:i = 64
+            text:s = "Ours method"
+            color:p4 = 1,1,1,1
+            alignment_x:e_TextAlignmentX = Center
+            font_name:s = "fonts/times-new-roman-regular.ttf"
+          }
+        }
+      }
+      row {
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0.1, 0.25, 0.25
+          size:i2 = 512, 512
+          figure {
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_2.png"
+          }
+        }
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0.1, 0.25, 0.25
+          size:i2 = 512, 512
+          figure {
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_3.png"
+          }
+        }
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0.1, 0.25, 0.25
+          size:i2 = 512, 512
+          figure {
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_4.png"
+          }
+        }
+        elem {
+          type:e_FigureType = Transform
+          crop:p4 = 0.5,0.1, 0.25, 0.25
+          size:i2 = 512, 512
+          figure {
+            type:e_FigureType = PrimitiveImage
+            path:s = "images/Bunny_5.png"
+          }
+        }
+      }
+    }
+  }
+}
