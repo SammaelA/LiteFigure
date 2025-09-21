@@ -230,9 +230,9 @@ namespace LiteFigure
     void prepare_instances(int2 pos, std::vector<Instance> &out_instances);
 
     float4 color = float4(1,0,0,1);
-    float thickness = 0.0075f;
+    float thickness = 0.005f;
     bool use_points = true;
-    float point_size = 0.01f;
+    float point_size = 0.0067f;
     std::vector<float2> values; // in normalized coordinates (0..1)
   private:
     std::vector<Line> lines;

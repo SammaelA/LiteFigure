@@ -84,17 +84,56 @@ namespace LiteFigure
     }
   }
 
+  std::string default_format_from_range(float min, float max)
+  {
+    float size = max - min;
+    if (size < 1e-4f)
+      return "%.7f";
+    else if (size < 1e-3f)
+      return "%.6f";
+    else if (size < 1e-2f)
+      return "%.5f";
+    else if (size < 1e-1f)
+      return "%.4f";
+    else if (size < 1)
+      return "%.3f";
+    else if (size < 10)
+      return "%.2f";
+    else if (size < 100)
+      return "%.1f";
+    else
+      return "%.0f";
+  }
+
+  float tick_rounding_from_range(float tick, float min, float max)
+  {
+    float size = max - min;
+    if (size < 1e-4f)
+      return 1e-7f*round(tick/1e-7f);
+    else if (size < 1e-3f)
+      return 1e-6f*round(tick/1e-6f);
+    else if (size < 1e-2f)
+      return 1e-5f*round(tick/1e-5f);
+    else if (size < 1e-1f)
+      return 1e-4f*round(tick/1e-4f);
+    else if (size < 1)
+      return 1e-3f*round(tick/1e-3f);
+    else if (size < 100)
+      return 1.0f*round(tick/1.0f);
+    else if (size < 1000)
+      return 10.0f*round(tick/10.0f);
+    else if (size < 10000)
+      return 100.0f*round(tick/100.0f);
+    else 
+      return 1000.0f*round(tick/1000.0f);
+  } 
+
   bool LinePlot::load(const Block *blk)
   {
     Block dummy_block;
 
-    float4 background_color = float4(1,1,1,1);
-    float2 plot_proportions = float2(1,1);
-
     size = blk->get_ivec2("size", size);
-    background_color = blk->get_vec4("background_color", background_color);
-    plot_proportions = blk->get_vec2("plot_proportions", plot_proportions);
-    plot_proportions = float2(1, plot_proportions.y/plot_proportions.x);
+    float4 background_color = blk->get_vec4("background_color", float4(1,1,1,1));
 
     Text default_text;
     default_text.alignment_x = TextAlignmentX::Center;
@@ -118,12 +157,13 @@ namespace LiteFigure
 
     header = default_text;
     header.retain_width = true;
-    header.size = int2(size.x, -1);
+    header.retain_height = true;
+    header.alignment_y = TextAlignmentY::Top;
     if (blk->get_block("header"))
     {
       header.load(blk->get_block("header"));
     }
-
+    header.size = int2(size.x, 2*header.font_size);
 
     float2 x_range = float2(1e38f, -1e38f);
     float2 y_range = float2(1e38f, -1e38f);
@@ -153,8 +193,8 @@ namespace LiteFigure
       for (int j = 0; j < x_values.size(); j++)
       {
         graph.values[j] = float2(x_values[j], y_values[j]);
-        x_range = min(x_range, float2(x_values[j], x_values[j]));
-        y_range = min(y_range, float2(y_values[j], y_values[j]));
+        x_range = float2(std::min(x_range.x, x_values[j]), std::max(x_range.y, x_values[j]));
+        y_range = float2(std::min(y_range.x, y_values[j]), std::max(y_range.y, y_values[j]));
       }
       if (graph_blk->get_block("line"))
       {
@@ -162,6 +202,12 @@ namespace LiteFigure
       }
       graphs.push_back(graph);
     }
+
+    //increase range by 5% on each side to make plot look nice
+    x_range.x -= (x_range.y - x_range.x) * 0.05f;
+    x_range.y += (x_range.y - x_range.x) * 0.05f;
+    y_range.x -= (y_range.y - y_range.x) * 0.05f;
+    y_range.y += (y_range.y - y_range.x) * 0.05f;
 
     x_range = blk->get_vec2("x_range", x_range);
     y_range = blk->get_vec2("y_range", y_range); 
@@ -192,7 +238,7 @@ namespace LiteFigure
       x_label.load(blk->get_block("x_label"));
     }
 
-    std::string x_tick_format = "%f";
+    std::string x_tick_format = default_format_from_range(x_range.x, x_range.y);
     std::vector<float> x_tick_values;
     int tick_count = 5;
     if (blk->get_block("x_ticks"))
@@ -207,7 +253,7 @@ namespace LiteFigure
       float step = (x_range.y - x_range.x) / float(tick_count);
       for (int i = 0; i < tick_count; i++)
       {
-        x_tick_values.push_back(x_range.x + step * (i+0.5f));
+        x_tick_values.push_back(tick_rounding_from_range(x_range.x + step * (i+0.5f), x_range.x, x_range.y));
       }
     }
 
@@ -257,7 +303,7 @@ namespace LiteFigure
       y_label.load(blk->get_block("y_label"));
     }
 
-    std::string y_tick_format = "%f";
+    std::string y_tick_format = default_format_from_range(y_range.x, y_range.y);
     std::vector<float> y_tick_values;
     tick_count = 5;
     if (blk->get_block("y_ticks"))
@@ -272,7 +318,7 @@ namespace LiteFigure
       float step = (y_range.y - y_range.x) / float(tick_count);
       for (int i = 0; i < tick_count; i++)
       {
-        y_tick_values.push_back(y_range.x + step * (i+0.5f));
+        y_tick_values.push_back(tick_rounding_from_range(y_range.x + step * (i+0.5f), y_range.x, y_range.y));
       }
     }
 
@@ -307,7 +353,7 @@ namespace LiteFigure
     }
 
     std::shared_ptr<Collage> body = std::make_shared<Collage>();
-    body->size = int2(size.x, plot_proportions.y * size.x);
+    body->size = int2(size.x, size.y);
     {
       std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
       fill->size = size;
