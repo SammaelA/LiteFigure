@@ -1,0 +1,34 @@
+{
+    templates {
+        elements {
+            base_elem {
+                type:e_FigureType = Collage
+                size:i2 = 256, 256
+                image {
+                    pos:i2 = 0, 0
+                    size:i2 = 256, 256
+                    type:e_FigureType = PrimitiveImage
+                    path:s = "images/block_1.png"
+                }
+                rect {
+                    pos:i2 = 0, 0
+                    size:i2 = 256, 256
+                    type:e_FigureType = Rectangle
+                    color:p4 = 0,1,0,1
+                    thickness:r = 0.01
+                }        
+            }
+        }
+    }
+    figure {
+        type:e_FigureType = Grid
+        row {
+            elem extends templates.elements.base_elem { rect {color:p4 = 0,1,0,1 thickness:r = 0.01}}
+            elem extends templates.elements.base_elem { rect {color:p4 = 0,0,1,1 thickness:r = 0.02}}
+        }
+        row {
+            elem extends templates.elements.base_elem { rect {color:p4 = 1,1,1,1 thickness:r = 0.04}}
+            elem extends templates.elements.base_elem { rect {color:p4 = 1,0,0,1 thickness:r = 0.08}}
+        }
+    }
+}

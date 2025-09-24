@@ -219,6 +219,7 @@ struct Block
   unsigned get_enum(const std::string name, unsigned base_val = 0) const;
   std::string get_string(const std::string name, std::string base_val = "") const;
   Block *get_block(std::string name) const;
+  Block *get_block_rec(std::string name) const; // can find blocks in sub-blocks, e.g "Block1.Block2.Block3"
   bool get_arr(const std::string name, std::vector<double> &values, bool replace = false) const;
   bool get_arr(const std::string name, std::vector<float> &values, bool replace = false) const;
   bool get_arr(const std::string name, std::vector<int> &values, bool replace = false) const;

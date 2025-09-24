@@ -374,9 +374,9 @@ std::string save_string(const std::string &s)
   return res;
 }
 
-bool load_block(const char *data, int &cur_pos, Block &b);
+bool load_block(const char *data, int &cur_pos, Block &b, const Block &global_parent);
 bool read_array(const char *data, int &cur_pos, Block::DataArray &a);
-bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &b)
+bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &parent, const Block &global_parent)
 {
   std::string token = next_token(data, cur_pos);
   //:<type> = <description> or { <block> }
@@ -394,7 +394,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &b)
         v.type = Block::ValueType::EMPTY;
         return false;
       }
-      block_to_extend = b.get_block(name);
+      block_to_extend = global_parent.get_block_rec(name);
       if (!block_to_extend)
       {
         printf("Warning: block %s is set to be parent for extension, but was not found\n", name.c_str());
@@ -402,7 +402,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &b)
     }
     v.bl = new Block();
     v.type = Block::ValueType::BLOCK;
-    bool loaded = load_block(data, cur_pos, *(v.bl));
+    bool loaded = load_block(data, cur_pos, *(v.bl), global_parent);
     if (loaded && block_to_extend)
     {
       Block *det_blk = v.bl;
@@ -810,7 +810,7 @@ bool read_array(const char *data, int &cur_pos, Block::DataArray &a)
     return false;
   }
 }
-bool load_block(const char *data, int &cur_pos, Block &b)
+bool load_block(const char *data, int &cur_pos, Block &b, const Block &global_parent)
 {
   bool correct = true;
   while (correct)
@@ -832,7 +832,7 @@ bool load_block(const char *data, int &cur_pos, Block &b)
       // next value
       b.names.push_back(token);
       b.values.emplace_back();
-      correct = correct && read_value(data, cur_pos, b.values.back(), b);
+      correct = correct && read_value(data, cur_pos, b.values.back(), b, global_parent);
     }
   }
   return true;
@@ -849,7 +849,7 @@ bool load_block_from_string(const std::string &str, Block &b)
   std::string token = next_token(data, cur_pos);
   if (token == "{")
   {
-    return load_block(data, cur_pos, b);
+    return load_block(data, cur_pos, b, b);
   }
   else
   {
@@ -1149,6 +1149,17 @@ bool Block::get_arr(const std::string name, std::vector<unsigned short> &_values
 bool Block::get_arr(const std::string name, std::vector<std::string> &_values, bool replace) const
 {
   return get_arr(get_id(name), _values, replace);
+}
+Block *Block::get_block_rec(std::string name) const
+{
+  auto it = name.find_first_of('.');
+  if (it == std::string::npos)
+    return get_block(name);
+  Block *child = get_block(name.substr(0, it));
+  if (child)
+    return child->get_block_rec(name.substr(it + 1));
+  else
+    return nullptr;
 }
 
 std::string double_to_string(double val)

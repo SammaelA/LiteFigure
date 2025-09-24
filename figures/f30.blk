@@ -1,16 +1,14 @@
 {
-  type:e_FigureType = Grid
-  row {
-    elem_1 {
+    base_elem {
         type:e_FigureType = Collage
         size:i2 = 256, 256
-        elem_1 {
+        image {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = PrimitiveImage
             path:s = "images/block_1.png"
         }
-        elem_2 {
+        rect {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = Rectangle
@@ -18,36 +16,15 @@
             thickness:r = 0.01
         }        
     }
-    elem_2 extends elem_1 {
-        elem_2 {
-            color:p4 = 0,0,1,1
-            thickness:r = 0.02
-        }        
-    }
-  }
-  row {
-    elem_1 {
-        type:e_FigureType = Collage
-        size:i2 = 256, 256
-        elem_1 {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = PrimitiveImage
-            path:s = "images/block_1.png"
+    figure {
+        type:e_FigureType = Grid
+        row {
+            elem extends base_elem { rect {color:p4 = 0,1,0,1 thickness:r = 0.01}}
+            elem extends base_elem { rect {color:p4 = 0,0,1,1 thickness:r = 0.02}}
         }
-        elem_2 {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = Rectangle
-            color:p4 = 1,1,1,1
-            thickness:r = 0.04
-        }        
+        row {
+            elem extends base_elem { rect {color:p4 = 1,1,1,1 thickness:r = 0.04}}
+            elem extends base_elem { rect {color:p4 = 1,0,0,1 thickness:r = 0.08}}
+        }
     }
-    elem_2 extends elem_1 {
-        elem_2 {
-            color:p4 = 1,0,0,1
-            thickness:r = 0.08
-        }        
-    }
-  }
 }

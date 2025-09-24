@@ -471,6 +471,10 @@ namespace LiteFigure
 
       save_block_to_file("saves/temp_1.blk", temp_blk);
     }
+    else if (blk->get_block("figure"))
+    {
+      figure_blk = blk->get_block("figure");
+    }
     else
     {
       figure_blk = blk;
