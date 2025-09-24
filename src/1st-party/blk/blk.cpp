@@ -376,15 +376,42 @@ std::string save_string(const std::string &s)
 
 bool load_block(const char *data, int &cur_pos, Block &b);
 bool read_array(const char *data, int &cur_pos, Block::DataArray &a);
-bool read_value(const char *data, int &cur_pos, Block::Value &v)
+bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &b)
 {
   std::string token = next_token(data, cur_pos);
   //:<type> = <description> or { <block> }
-  if (token == "{")
+  if (token == "{" || token == "extends")
   {
+    const Block *block_to_extend = nullptr;
+    // extends <parent_block_name> { <block> }
+    if (token == "extends")
+    {
+      std::string name = next_token(data, cur_pos);
+      std::string next_tok = next_token(data, cur_pos);
+      if (next_tok != "{")
+      {
+        fprintf(stderr, "line %d expected { after extends <parent_block_name>", cur_line);
+        v.type = Block::ValueType::EMPTY;
+        return false;
+      }
+      block_to_extend = b.get_block(name);
+      if (!block_to_extend)
+      {
+        printf("Warning: block %s is set to be parent for extension, but was not found\n", name.c_str());
+      }
+    }
     v.bl = new Block();
     v.type = Block::ValueType::BLOCK;
-    return load_block(data, cur_pos, *(v.bl));
+    bool loaded = load_block(data, cur_pos, *(v.bl));
+    if (loaded && block_to_extend)
+    {
+      Block *det_blk = v.bl;
+      v.bl = new Block();
+      v.bl->copy(block_to_extend);
+      v.bl->add_detalization(*det_blk);
+      delete det_blk;
+    }
+    return loaded;
   }
   else if (token == ":")
   { // simple value or array
@@ -805,7 +832,7 @@ bool load_block(const char *data, int &cur_pos, Block &b)
       // next value
       b.names.push_back(token);
       b.values.emplace_back();
-      correct = correct && read_value(data, cur_pos, b.values.back());
+      correct = correct && read_value(data, cur_pos, b.values.back(), b);
     }
   }
   return true;

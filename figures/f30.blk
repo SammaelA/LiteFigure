@@ -1,16 +1,16 @@
 {
   type:e_FigureType = Grid
   row {
-    elem {
+    elem_1 {
         type:e_FigureType = Collage
         size:i2 = 256, 256
-        elem {
+        elem_1 {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = PrimitiveImage
             path:s = "images/block_1.png"
         }
-        elem {
+        elem_2 {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = Rectangle
@@ -18,35 +18,24 @@
             thickness:r = 0.01
         }        
     }
-    elem {
-        type:e_FigureType = Collage
-        size:i2 = 256, 256
-        elem {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = PrimitiveImage
-            path:s = "images/block_1.png"
-        }
-        elem {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = Rectangle
+    elem_2 extends elem_1 {
+        elem_2 {
             color:p4 = 0,0,1,1
             thickness:r = 0.02
         }        
     }
   }
   row {
-    elem {
+    elem_1 {
         type:e_FigureType = Collage
         size:i2 = 256, 256
-        elem {
+        elem_1 {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = PrimitiveImage
             path:s = "images/block_1.png"
         }
-        elem {
+        elem_2 {
             pos:i2 = 0, 0
             size:i2 = 256, 256
             type:e_FigureType = Rectangle
@@ -54,19 +43,8 @@
             thickness:r = 0.04
         }        
     }
-    elem {
-        type:e_FigureType = Collage
-        size:i2 = 256, 256
-        elem {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = PrimitiveImage
-            path:s = "images/block_1.png"
-        }
-        elem {
-            pos:i2 = 0, 0
-            size:i2 = 256, 256
-            type:e_FigureType = Rectangle
+    elem_2 extends elem_1 {
+        elem_2 {
             color:p4 = 1,0,0,1
             thickness:r = 0.08
         }        
