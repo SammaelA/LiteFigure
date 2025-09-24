@@ -146,7 +146,7 @@ namespace LiteFigure
     ch[0] = prim->character;
     ch[1] = '\0';
     float sz = PPP*prim->font_size;
-    float2 sh = float2(font.scale*glyph.xMin, font.scale*glyph.yMax);
+    float2 sh = float2(-font.scale*glyph.xMin, font.scale*glyph.yMax);
     int res = pdf_add_text_flip(pdf, nullptr, ch, sz, PPP*inst.pos.x + sh.x*sz, PPP*inst.pos.y + sh.y*sz, 
                                 float4_to_PDF_color(prim->color));
     if (res < 0)
