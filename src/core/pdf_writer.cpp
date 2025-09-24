@@ -112,8 +112,8 @@ namespace LiteFigure
     Renderer renderer;
     Instance image_inst;
     image_inst.prim = prim;
+    image_inst.data = inst;
     image_inst.data.pos = int2(0, 0);
-    image_inst.data.size = inst.size;
     renderer.render_instance(image_inst, out);
 
     // then, save to temporary png file. Drop alpha channel
