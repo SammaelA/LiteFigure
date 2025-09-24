@@ -4,6 +4,23 @@
 
 namespace LiteFigure
 {
+  REGISTER_ENUM(SamplerFilter,
+                ([]()
+                 { return std::vector<std::pair<std::string, unsigned>>{
+                       {"Nearest", (unsigned)LiteImage::Sampler::Filter::NEAREST},
+                       {"Linear",  (unsigned)LiteImage::Sampler::Filter::LINEAR},
+                   }; })());
+
+  REGISTER_ENUM(AddressMode,
+                ([]()
+                 { return std::vector<std::pair<std::string, unsigned>>{
+                       {"Wrap", (unsigned)LiteImage::Sampler::AddressMode::WRAP},
+                       {"Mirror",  (unsigned)LiteImage::Sampler::AddressMode::MIRROR},
+                       {"Clamp",  (unsigned)LiteImage::Sampler::AddressMode::CLAMP},
+                       {"Border",  (unsigned)LiteImage::Sampler::AddressMode::BORDER},
+                       {"MirrorOnce",  (unsigned)LiteImage::Sampler::AddressMode::MIRROR_ONCE},
+                   }; })());
+
   bool PrimitiveImage::load(const Block *blk)
   {
     size = blk->get_ivec2("size", size);
@@ -14,7 +31,7 @@ namespace LiteFigure
       return false;
     }
     image = LiteImage::LoadImage<float4>(path.c_str());
-    //TODO: set sampler
+
     //TODO: support images with alpha
     for (int i=0;i<image.height()*image.width();i++)
       image.data()[i].w = 1.0f;
@@ -28,6 +45,14 @@ namespace LiteFigure
     {
       size = int2(image.width(), image.height());
     }
+
+    LiteImage::Sampler::AddressMode address_mode = LiteImage::Sampler::AddressMode::CLAMP;
+    address_mode = (LiteImage::Sampler::AddressMode)blk->get_enum("address_mode", (uint32_t)address_mode);
+    sampler.filter = (LiteImage::Sampler::Filter)blk->get_enum("filter", (uint32_t)sampler.filter);
+    sampler.addressU = (LiteImage::Sampler::AddressMode)blk->get_enum("addressU", (uint32_t)address_mode);
+    sampler.addressV = (LiteImage::Sampler::AddressMode)blk->get_enum("addressV", (uint32_t)address_mode);
+    sampler.addressW = (LiteImage::Sampler::AddressMode)blk->get_enum("addressW", (uint32_t)address_mode);
+    sampler.borderColor = blk->get_vec4("border_color", sampler.borderColor);
 
     return true;
   }
