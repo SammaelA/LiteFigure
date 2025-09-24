@@ -22,7 +22,8 @@ namespace LiteFigure
     Text,
     Glyph,
     LinePlot,
-    LineGraph
+    LineGraph,
+    Rectangle
   };
   
   struct Figure
@@ -121,6 +122,15 @@ namespace LiteFigure
     virtual bool load(const Block *blk) override;
 
     float4 color = float4(1,0,0,1);
+  };
+
+  struct Rectangle : public Primitive
+  {
+    virtual FigureType getType() const override { return FigureType::Rectangle; }
+    virtual bool load(const Block *blk) override;
+
+    float4 color = float4(1,0,0,1);
+    float thickness = 0.01f; //in normalized coordinates (0..1), 0.5f will fill the whole frame body
   };
 
   enum class LineStyle

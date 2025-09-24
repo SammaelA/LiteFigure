@@ -21,6 +21,7 @@ namespace LiteFigure
                        {"Glyph", (unsigned)FigureType::Glyph},
                        {"LinePlot", (unsigned)FigureType::LinePlot},
                        {"LineGraph", (unsigned)FigureType::LineGraph},
+                       {"Rectangle", (unsigned)FigureType::Rectangle},
                    }; })());
 
   REGISTER_ENUM(LineStyle,
@@ -83,6 +84,9 @@ namespace LiteFigure
       break;
     case FigureType::LineGraph:
       fig = std::make_shared<LineGraph>();
+      break;
+    case FigureType::Rectangle:
+      fig = std::make_shared<Rectangle>();
       break;
     default:
       printf("[create_figure] unsupported figure type %d\n", (int)blk->get_enum("type", (unsigned)FigureType::Unknown));

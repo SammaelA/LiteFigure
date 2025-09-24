@@ -28,6 +28,9 @@ namespace LiteFigure
 		case FigureType::Glyph:
 			render(static_cast<const Glyph &>(*inst.prim), inst.data, out);
 			break;
+		case FigureType::Rectangle:
+			render(static_cast<const Rectangle &>(*inst.prim), inst.data, out);
+			break;
 		default:
 			printf("ERROR: trying to render unrenderable primitve (type %d)\n", (int)(inst.prim->getType()));
 			break;
@@ -64,6 +67,29 @@ namespace LiteFigure
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 			}
 		}
+	}
+
+
+	void Renderer::render(const Rectangle &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
+	{
+		int border_pixels = std::max<int>(1, round(prim.thickness*std::max(prim.size.x, prim.size.y)));
+		border_pixels = std::min(border_pixels, (std::min(prim.size.x, prim.size.y)+1)/2);
+		float4 c = prim.color;
+		for (int y=instance.pos.y; y<instance.pos.y+border_pixels; y++)
+			for (int x=instance.pos.x; x<instance.pos.x+prim.size.x; x++)
+				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
+
+		for (int y=instance.pos.y+border_pixels; y<instance.pos.y+prim.size.y-border_pixels; y++)
+		{
+			for (int x=instance.pos.x; x<instance.pos.x+border_pixels; x++)
+				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
+			for (int x=instance.pos.x+prim.size.x-border_pixels; x<instance.pos.x+prim.size.x; x++)
+				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
+		}
+
+		for (int y=instance.pos.y+prim.size.y-border_pixels; y<instance.pos.y+prim.size.y; y++)
+			for (int x=instance.pos.x; x<instance.pos.x+prim.size.x; x++)
+				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 	}
 
 	void Renderer::render(const Line &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const

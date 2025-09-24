@@ -72,6 +72,28 @@ namespace LiteFigure
     return true;
   }
 
+  bool Rectangle::load(const Block *blk)
+  {
+    std::shared_ptr<Rectangle> prim = std::make_shared<Rectangle>();
+    size = blk->get_ivec2("size", size);
+    color = blk->get_vec4("color", color);
+    thickness = blk->get_double("thickness", thickness);
+
+    if (size.x < 1 || size.y < 1)
+    {
+      printf("[Rectangle::load] size must be explicitly declared\n");
+      return false;
+    }
+
+    if (thickness < 0 || thickness > 0.5)
+    {
+      printf("[Rectangle::load] thickness must be in [0, 0.5] range\n");
+      return false;
+    }
+
+    return true;
+  }
+
   bool Line::load(const Block *blk)
   {
     std::shared_ptr<Line> prim = std::make_shared<Line>();

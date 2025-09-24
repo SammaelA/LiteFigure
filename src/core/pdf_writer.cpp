@@ -98,6 +98,12 @@ namespace LiteFigure
     return pdf_add_filled_rectangle(pdf, page, x, document_height_points - y - h, w, h, 0, colour, colour);
   }
 
+  int pdf_add_rectangle_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float w, float h, 
+                             float border_width, uint32_t colour)
+  {
+    return pdf_add_rectangle(pdf, page, x, document_height_points - y - h, w, h, border_width, colour);
+  }
+
   int pdf_add_ellipse_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float x_radius, float y_radius, 
                            uint32_t colour)
   {
@@ -185,6 +191,20 @@ namespace LiteFigure
     return true;
   }
 
+  bool save_Rectangle_to_pdf(std::shared_ptr<Rectangle> prim, InstanceData inst, struct pdf_doc *pdf)
+  {
+    float s = PPP*prim->thickness*std::max(inst.size.x, inst.size.y);
+    int res = pdf_add_rectangle_flip(pdf, nullptr, PPP*inst.pos.x+s/2, PPP*inst.pos.y+s/2, 
+                                     PPP*inst.size.x-s, PPP*inst.size.y-s,s,
+                                     float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
+    if (res < 0)
+    {
+      fprintf(stderr, "[PDFGen]Error adding rectangle: %d\n", res);
+      return false;
+    }
+    return true;
+  }
+
   bool save_Circle_to_pdf(std::shared_ptr<Circle> prim, InstanceData inst, struct pdf_doc *pdf)
   {
     float center_x = PPP*(inst.pos.x + inst.size.x*prim->center.x);
@@ -242,6 +262,9 @@ namespace LiteFigure
         break;
       case FigureType::Circle:
         save_Circle_to_pdf(std::dynamic_pointer_cast<Circle>(inst.prim), inst.data, pdf);
+        break;
+      case FigureType::Rectangle:
+        save_Rectangle_to_pdf(std::dynamic_pointer_cast<Rectangle>(inst.prim), inst.data, pdf);
         break;
       default:
         printf("[save_figure_to_pdf] Primitive type %d not supported\n", (int)(inst.prim->getType()));

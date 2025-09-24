@@ -33,6 +33,7 @@ namespace LiteFigure
 		void render(const Line &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
 		void render(const Circle &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
 		void render(const Polygon &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
+		void render(const Rectangle &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
     void render(const Glyph &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
   };
 }
