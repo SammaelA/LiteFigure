@@ -257,15 +257,14 @@ namespace LiteFigure
 		return size;
 	}
 
-	void Text::prepare_glyphs(int2 pos, std::vector<Instance> &out_instances)
+	void Text::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
 	{
 		if (background_color.w > 0)
 		{
-			std::shared_ptr<PrimitiveFill> fill = std::make_shared<PrimitiveFill>();
-			fill->size = size;
-			fill->color = background_color;
+			background_fill.size = size;
+			background_fill.color = background_color;
 			Instance inst;
-			inst.prim = fill;
+			inst.prim = &background_fill;
 			inst.data.pos = pos;
 			inst.data.size = size;
 			out_instances.push_back(inst);
@@ -276,7 +275,7 @@ namespace LiteFigure
 			int2 glyph_pos = glyph_positions[i];
 			glyph_pos += pos;
 			Instance inst;
-			inst.prim = std::make_shared<Glyph>(glyph);
+			inst.prim = &glyph;
 			inst.data.pos = glyph_pos;
 			inst.data.size = glyph.size;
 			out_instances.push_back(inst);

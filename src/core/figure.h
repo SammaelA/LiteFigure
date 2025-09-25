@@ -26,6 +26,7 @@ namespace LiteFigure
     Rectangle
   };
   
+  struct Instance;
   struct Figure
   {
     virtual ~Figure() = default;
@@ -38,6 +39,10 @@ namespace LiteFigure
     // due to rounding errors or other constaints
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) = 0;
 
+    // recursively prepares a set to instances (primitives + positions) to 
+    // render or somehow display this figure
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) = 0;
+
     // loads figure data from blk, returns true on success
     virtual bool load(const Block *blk) = 0;
     int2 size = int2(-1,-1);
@@ -48,12 +53,8 @@ namespace LiteFigure
   struct Primitive : public Figure
   {
     virtual FigureType getType() const = 0;
-    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override
-    {
-      if (force_size.x > 0 && force_size.y > 0)
-        size = force_size;
-      return size;
-    }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
   };
 
   struct InstanceData
@@ -64,13 +65,14 @@ namespace LiteFigure
   };
   struct Instance
   {
-    std::shared_ptr<Primitive> prim;
+    Primitive *prim; //pointer to figure tree, no ownership
     InstanceData data;
   };
 
   struct Grid : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Grid; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
 
@@ -87,6 +89,7 @@ namespace LiteFigure
     };
 
     virtual FigureType getType() const override { return FigureType::Collage; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
 
@@ -96,6 +99,7 @@ namespace LiteFigure
   struct Transform : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Transform; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
 
@@ -213,10 +217,9 @@ namespace LiteFigure
   struct Text : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Text; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
-
-    void prepare_glyphs(int2 pos, std::vector<Instance> &out_instances);
 
     int font_size = 64;
     std::string text;
@@ -230,14 +233,15 @@ namespace LiteFigure
   private:
     std::vector<int2> glyph_positions;
     std::vector<Glyph> glyphs;
+    PrimitiveFill background_fill;
   };
 
   struct LineGraph : public Figure
   {
     virtual FigureType getType() const override { return FigureType::LineGraph; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
-    void prepare_instances(int2 pos, std::vector<Instance> &out_instances);
 
     float4 color = float4(1,0,0,1);
     float thickness = 0.005f;
@@ -252,9 +256,9 @@ namespace LiteFigure
   struct LinePlot : public Figure
   {
     virtual FigureType getType() const override { return FigureType::LinePlot; }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
     virtual bool load(const Block *blk) override;
-    void prepare_instances(int2 pos, std::vector<Instance> &out_instances);
 
   private:
     Text header;

@@ -110,7 +110,7 @@ namespace LiteFigure
     return pdf_add_ellipse(pdf, page, x, document_height_points - y, x_radius, y_radius, 0, colour, colour);
   }
 
-  bool save_PrimitiveImage_to_pdf(std::shared_ptr<PrimitiveImage> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_PrimitiveImage_to_pdf(PrimitiveImage *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     static int counter = 0;
     //first, render image (it can be cropped, rotated, etc.)
@@ -139,7 +139,7 @@ namespace LiteFigure
     return true;
   }
 
-  bool save_Glyph_to_pdf(std::shared_ptr<Glyph> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_Glyph_to_pdf(Glyph *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     const Font &font = get_font(prim->font_name);
     const TTFSimpleGlyph &glyph = font.glyphs[prim->glyph_id];
@@ -163,7 +163,7 @@ namespace LiteFigure
     return true;
   }
 
-  bool save_Line_to_pdf(std::shared_ptr<Line> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_Line_to_pdf(Line *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     int res = pdf_add_line_flip(pdf, nullptr, 
                                 PPP*(inst.pos.x + inst.size.x*prim->start.x), PPP*(inst.pos.y + inst.size.y*prim->start.y),
@@ -178,7 +178,7 @@ namespace LiteFigure
     return true;
   }
 
-  bool save_PrimitiveFill_to_pdf(std::shared_ptr<PrimitiveFill> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_PrimitiveFill_to_pdf(PrimitiveFill *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     int res = pdf_add_filled_rectangle_flip(pdf, nullptr, PPP*inst.pos.x, PPP*inst.pos.y, 
                                             PPP*inst.size.x, PPP*inst.size.y, 
@@ -191,7 +191,7 @@ namespace LiteFigure
     return true;
   }
 
-  bool save_Rectangle_to_pdf(std::shared_ptr<Rectangle> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_Rectangle_to_pdf(Rectangle *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     float s = PPP*prim->thickness*std::max(inst.size.x, inst.size.y);
     int res = pdf_add_rectangle_flip(pdf, nullptr, PPP*inst.pos.x+s/2, PPP*inst.pos.y+s/2, 
@@ -205,7 +205,7 @@ namespace LiteFigure
     return true;
   }
 
-  bool save_Circle_to_pdf(std::shared_ptr<Circle> prim, InstanceData inst, struct pdf_doc *pdf)
+  bool save_Circle_to_pdf(Circle *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     float center_x = PPP*(inst.pos.x + inst.size.x*prim->center.x);
     float center_y = PPP*(inst.pos.y + inst.size.y*prim->center.y);
@@ -249,22 +249,22 @@ namespace LiteFigure
       switch (inst.prim->getType())
       {
       case FigureType::PrimitiveImage:
-        save_PrimitiveImage_to_pdf(std::dynamic_pointer_cast<PrimitiveImage>(inst.prim), inst.data, pdf);
+        save_PrimitiveImage_to_pdf(dynamic_cast<PrimitiveImage*>(inst.prim), inst.data, pdf);
         break;
       case FigureType::PrimitiveFill:
-        save_PrimitiveFill_to_pdf(std::dynamic_pointer_cast<PrimitiveFill>(inst.prim), inst.data, pdf);
+        save_PrimitiveFill_to_pdf(dynamic_cast<PrimitiveFill*>(inst.prim), inst.data, pdf);
         break;
       case FigureType::Glyph:
-        save_Glyph_to_pdf(std::dynamic_pointer_cast<Glyph>(inst.prim), inst.data, pdf);
+        save_Glyph_to_pdf(dynamic_cast<Glyph*>(inst.prim), inst.data, pdf);
         break;
       case FigureType::Line:
-        save_Line_to_pdf(std::dynamic_pointer_cast<Line>(inst.prim), inst.data, pdf);
+        save_Line_to_pdf(dynamic_cast<Line*>(inst.prim), inst.data, pdf);
         break;
       case FigureType::Circle:
-        save_Circle_to_pdf(std::dynamic_pointer_cast<Circle>(inst.prim), inst.data, pdf);
+        save_Circle_to_pdf(dynamic_cast<Circle*>(inst.prim), inst.data, pdf);
         break;
       case FigureType::Rectangle:
-        save_Rectangle_to_pdf(std::dynamic_pointer_cast<Rectangle>(inst.prim), inst.data, pdf);
+        save_Rectangle_to_pdf(dynamic_cast<Rectangle*>(inst.prim), inst.data, pdf);
         break;
       default:
         printf("[save_figure_to_pdf] Primitive type %d not supported\n", (int)(inst.prim->getType()));

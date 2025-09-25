@@ -395,7 +395,6 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &pa
         return false;
       }
       block_to_extend = global_parent.get_block_rec(name);
-      printf("extends %s\n", name.c_str());
       if (!block_to_extend)
       {
         printf("Warning: block %s is set to be parent for extension, but was not found\n", name.c_str());
@@ -404,7 +403,6 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &pa
     v.bl = new Block();
     v.type = Block::ValueType::BLOCK;
     bool loaded = load_block(data, cur_pos, *(v.bl), global_parent);
-    printf("loaded %d elem\n", v.bl->size());
     if (loaded && block_to_extend)
     {
       Block *det_blk = v.bl;

@@ -39,7 +39,7 @@ namespace LiteFigure
     return size;
   }
 
-  void LineGraph::prepare_instances(int2 pos, std::vector<Instance> &out_instances)
+  void LineGraph::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
     //TODO: handle invalid values (<0 or >1)
     lines.resize(values.size() - 1);
@@ -68,7 +68,7 @@ namespace LiteFigure
     for (auto &line : lines)
     {
       Instance inst;
-      inst.prim = std::make_shared<Line>(line);
+      inst.prim = &line;
       inst.data.pos = pos;
       inst.data.size = size;
       out_instances.push_back(inst);
@@ -77,7 +77,7 @@ namespace LiteFigure
     for (auto &point : points)
     {
       Instance inst;
-      inst.prim = std::make_shared<Circle>(point);
+      inst.prim = &point;
       inst.data.pos = pos;
       inst.data.size = size;
       out_instances.push_back(inst);
@@ -482,11 +482,10 @@ namespace LiteFigure
 
     return true;
   }
-
-  void prepare_instances_rec(FigurePtr figure, int2 pos, std::vector<Instance> &instances);
-  void LinePlot::prepare_instances(int2 pos, std::vector<Instance> &out_instances)
+  
+  void LinePlot::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
-    prepare_instances_rec(full_graph_collage, pos, out_instances);
+    full_graph_collage->prepareInstances(pos, out_instances);
   }
 
   int2 LinePlot::calculateSize(int2 force_size)

@@ -128,13 +128,12 @@ namespace LiteFigure
       return size;
     }
 
-    //if element size is not set, set it to figure size
+    // if element size is not set, set it to figure size
     for (int i = 0; i < elements.size(); i++)
     {
       if (!is_valid_size(elements[i].size))
         elements[i].size = elements[i].figure->calculateSize();
     }
-
 
     // calculate proper size
     int2 min_val, max_val;
@@ -153,11 +152,11 @@ namespace LiteFigure
       for (int i = 0; i < elements.size(); i++)
       {
         elements[i].pos = int2(float2(elements[i].pos) * scale);
-        int2 target_size = max(int2(1,1), int2(float2(elements[i].size) * scale));
+        int2 target_size = max(int2(1, 1), int2(float2(elements[i].size) * scale));
         elements[i].size = elements[i].figure->calculateSize(target_size);
         if (verbose)
           printf("[Collage] element %d (type %d), pos %d %d, target size %d %d -> size %d %d\n", i, (int)elements[i].figure->getType(),
-                 elements[i].pos.x, elements[i].pos.y, 
+                 elements[i].pos.x, elements[i].pos.y,
                  target_size.x, target_size.y, elements[i].size.x, elements[i].size.y);
       }
     }
@@ -242,11 +241,11 @@ namespace LiteFigure
       int row_height = 0;
       for (auto &figure : row)
       {
-        int2 target_size = max(int2(1,1), int2(float2(figure->size) * scale));
+        int2 target_size = max(int2(1, 1), int2(float2(figure->size) * scale));
         int2 figure_size = figure->calculateSize(target_size);
         if (verbose)
-          printf("[Grid] figure pos %d %d, target size %d %d, size %d %d\n", cur_pos.x, cur_pos.y, 
-            target_size.x, target_size.y, figure_size.x, figure_size.y);
+          printf("[Grid] figure pos %d %d, target size %d %d, size %d %d\n", cur_pos.x, cur_pos.y,
+                 target_size.x, target_size.y, figure_size.x, figure_size.y);
         row_height = std::max(row_height, figure_size.y);
         max_pos = max(max_pos, cur_pos + figure_size);
         cur_pos.x += figure_size.x;
@@ -256,6 +255,12 @@ namespace LiteFigure
 
     size = max_pos - min_pos;
     return size;
+  }
+
+  void Collage::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
+  {
+    for (int i = 0; i < elements.size(); i++)
+      elements[i].figure->prepareInstances(pos + elements[i].pos, out_instances);
   }
 
   bool Grid::load(const Block *blk)
@@ -290,6 +295,23 @@ namespace LiteFigure
     }
 
     return true;
+  }
+
+  void Grid::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
+  {
+    int2 cur_pos = int2(0, 0); // local position in grid
+    for (auto &row : rows)
+    {
+      cur_pos.x = 0;
+      int row_height = 0;
+      for (auto &figure : row)
+      {
+        row_height = std::max(row_height, figure->size.y);
+        figure->prepareInstances(pos + cur_pos, out_instances);
+        cur_pos.x += figure->size.x;
+      }
+      cur_pos.y += row_height;
+    }
   }
 
   int2 Transform::calculateSize(int2 force_size)
@@ -345,101 +367,38 @@ namespace LiteFigure
     return true;
   }
 
-  void prepare_instances_rec(FigurePtr figure, int2 pos, std::vector<Instance> &instances)
+  void Transform::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
-    if (dynamic_cast<Primitive *>(figure.get()) && is_valid_size(figure->size))
+    auto child_type = figure->getType();
+    if (child_type == FigureType::PrimitiveImage || child_type == FigureType::Transform)
     {
-      Instance inst;
-      inst.prim = std::dynamic_pointer_cast<Primitive>(figure);
-      inst.data.pos = pos;
-      inst.data.size = figure->size;
-      instances.push_back(inst);
-    }
-    else if (dynamic_cast<Collage *>(figure.get()))
-    {
-      Collage *collage = dynamic_cast<Collage *>(figure.get());
-      for (int i = 0; i < collage->elements.size(); i++)
+      float3x3 crop_trans;
       {
-        prepare_instances_rec(collage->elements[i].figure, pos + collage->elements[i].pos, instances);
+        float x0 = crop.x;
+        float y0 = crop.y;
+        float x1 = crop.z;
+        float y1 = crop.w;
+        crop_trans = float3x3(x1 - x0, 0, x0, 0, y1 - y0, y0, 0, 0, 1);
       }
-    }
-    else if (dynamic_cast<Grid *>(figure.get()))
-    {
-      Grid *grid = dynamic_cast<Grid *>(figure.get());
-      int2 cur_pos = int2(0, 0); // local position in grid
-      for (auto &row : grid->rows)
+      float3x3 rot = float3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+      if (rotation != 0)
       {
-        cur_pos.x = 0;
-        int row_height = 0;
-        for (auto &figure : row)
-        {
-          row_height = std::max(row_height, figure->size.y);
-          prepare_instances_rec(figure, pos + cur_pos, instances);
-          cur_pos.x += figure->size.x;
-        }
-        cur_pos.y += row_height;
+        float a = rotation * (LiteMath::M_PI / 180.0f);
+        float c = cos(a);
+        float s = sin(a);
+        rot = float3x3(1, 0, 0.5, 0, 1, 0.5, 0, 0, 1) * float3x3(c, -s, 0, s, c, 0, 0, 0, 1) * float3x3(1, 0, -0.5, 0, 1, -0.5, 0, 0, 1);
       }
-    }
-    else if (dynamic_cast<Transform *>(figure.get()))
-    {
-      Transform *transform = dynamic_cast<Transform *>(figure.get());
-
-      auto child_type = transform->figure->getType();
-      if (child_type == FigureType::PrimitiveImage || child_type == FigureType::Transform)
+      float3x3 mirror = float3x3(mirror_x ? -1 : 1, 0, mirror_x ? 1 : 0,
+                                 0, mirror_y ? -1 : 1, mirror_y ? 1 : 0,
+                                 0, 0, 1);
+      std::vector<Instance> instances_to_transform;
+      figure->prepareInstances(pos, instances_to_transform);
+      float3x3 transform = mirror * rot * crop_trans;
+      for (auto &inst : instances_to_transform)
       {
-        float3x3 crop_trans;
-        {
-          float x0 = transform->crop.x;
-          float y0 = transform->crop.y;
-          float x1 = transform->crop.z;
-          float y1 = transform->crop.w;
-          crop_trans = float3x3(x1 - x0, 0, x0, 0, y1 - y0, y0, 0, 0, 1);
-        }
-        float3x3 rot = float3x3(1,0,0,0,1,0,0,0,1);
-        if (transform->rotation != 0)
-        {
-          float a = transform->rotation * (LiteMath::M_PI / 180.0f);
-          float c = cos(a);
-          float s = sin(a);
-          rot = float3x3(1,0,0.5,0,1,0.5,0,0,1) * float3x3(c, -s, 0, s, c, 0, 0, 0, 1) * float3x3(1,0,-0.5,0,1,-0.5,0,0,1);
-        }
-        float3x3 mirror = float3x3(transform->mirror_x ? -1 : 1, 0, transform->mirror_x ? 1 : 0,
-                                   0, transform->mirror_y ? -1 : 1, transform->mirror_y ? 1 : 0, 
-                                   0, 0, 1);
-        std::vector<Instance> instances_to_transform;
-        prepare_instances_rec(transform->figure, pos, instances_to_transform);
-        float3x3 transform = mirror*rot*crop_trans;
-        for (auto &inst : instances_to_transform)
-        {
-          inst.data.uv_transform = transform * inst.data.uv_transform;
-          instances.push_back(inst);
-        }
+        inst.data.uv_transform = transform * inst.data.uv_transform;
+        out_instances.push_back(inst);
       }
-      else
-      {
-        printf("[Transform::prepare_instances] only PrimitiveImage can be transformed now\n");
-        return;
-      }
-    }
-    else if (dynamic_cast<Text *>(figure.get()))
-    {
-      Text *text = dynamic_cast<Text *>(figure.get());
-      text->prepare_glyphs(pos, instances);
-    }
-    else if (dynamic_cast<LineGraph *>(figure.get()))
-    {
-      LineGraph *graph = dynamic_cast<LineGraph *>(figure.get());
-      graph->prepare_instances(pos, instances);
-    }
-    else if (dynamic_cast<LinePlot *>(figure.get()))
-    {
-      LinePlot *plot = dynamic_cast<LinePlot *>(figure.get());
-      plot->prepare_instances(pos, instances);
-    }
-    else
-    {
-      printf("[prepare_instances_rec] unsupported figure type %d\n", (int)figure->getType());
-      return;
     }
   }
 
@@ -448,7 +407,7 @@ namespace LiteFigure
     int2 actual_size = figure->calculateSize(figure->size);
     printf("actual size %d %d\n", actual_size.x, actual_size.y);
     std::vector<Instance> instances;
-    prepare_instances_rec(figure, int2(0, 0), instances);
+    figure->prepareInstances(int2(0, 0), instances);
     return instances;
   }
 

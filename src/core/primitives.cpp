@@ -21,6 +21,23 @@ namespace LiteFigure
                        {"MirrorOnce",  (unsigned)LiteImage::Sampler::AddressMode::MIRROR_ONCE},
                    }; })());
 
+  int2 Primitive::calculateSize(int2 force_size)
+  {
+    if (force_size.x > 0 && force_size.y > 0)
+      size = force_size;
+    return size;
+  }
+
+  void Primitive::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
+  {
+    Instance inst;
+    inst.prim = this;
+    inst.data.pos = pos;
+    inst.data.size = size;
+    
+    out_instances.push_back(inst);    
+  }
+
   bool PrimitiveImage::load(const Block *blk)
   {
     size = blk->get_ivec2("size", size);
@@ -59,7 +76,6 @@ namespace LiteFigure
 
   bool PrimitiveFill::load(const Block *blk)
   {
-    std::shared_ptr<PrimitiveFill> prim = std::make_shared<PrimitiveFill>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
 
@@ -74,7 +90,6 @@ namespace LiteFigure
 
   bool Rectangle::load(const Block *blk)
   {
-    std::shared_ptr<Rectangle> prim = std::make_shared<Rectangle>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     thickness = blk->get_double("thickness", thickness);
@@ -96,7 +111,6 @@ namespace LiteFigure
 
   bool Line::load(const Block *blk)
   {
-    std::shared_ptr<Line> prim = std::make_shared<Line>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     thickness = blk->get_double("thickness", thickness);
@@ -117,7 +131,6 @@ namespace LiteFigure
 
   bool Circle::load(const Block *blk)
   {
-    std::shared_ptr<Circle> prim = std::make_shared<Circle>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     radius = blk->get_double("radius", radius);
@@ -135,7 +148,6 @@ namespace LiteFigure
   
   bool Polygon::load(const Block *blk)
   {
-    std::shared_ptr<Polygon> prim = std::make_shared<Polygon>();
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     outline = blk->get_bool("outline", outline);
