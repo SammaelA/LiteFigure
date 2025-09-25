@@ -395,6 +395,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &pa
         return false;
       }
       block_to_extend = global_parent.get_block_rec(name);
+      printf("extends %s\n", name.c_str());
       if (!block_to_extend)
       {
         printf("Warning: block %s is set to be parent for extension, but was not found\n", name.c_str());
@@ -403,6 +404,7 @@ bool read_value(const char *data, int &cur_pos, Block::Value &v, const Block &pa
     v.bl = new Block();
     v.type = Block::ValueType::BLOCK;
     bool loaded = load_block(data, cur_pos, *(v.bl), global_parent);
+    printf("loaded %d elem\n", v.bl->size());
     if (loaded && block_to_extend)
     {
       Block *det_blk = v.bl;
@@ -826,6 +828,42 @@ bool load_block(const char *data, int &cur_pos, Block &b, const Block &global_pa
       // end of file
       fprintf(stderr, "line %d block loader reached end of file, } expected", cur_line);
       return false;
+    }
+    else if (token == "#include")
+    {
+      //#include "<path_to_block>"
+      token = next_token(data, cur_pos);
+      if (token != "\"")
+      {
+        fprintf(stderr, "line %d expected \" after #include", cur_line);
+        return false;
+      }
+      std::string path = read_string(data, cur_pos);
+      if (data[cur_pos] == '\"')
+      {
+        cur_pos++;
+      }
+      else
+      {
+        fprintf(stderr, "line %d expected \" at the end of a string in include path\n", cur_line);
+        return false;
+      }
+      printf("path = <%s>\n", path.c_str());
+      Block b_to_include;
+      bool loaded_b_to_include = load_block_from_file(path, b_to_include);
+      if (loaded_b_to_include)
+      {
+        for (int i=0;i<b_to_include.size();i++)
+        {
+          b.names.push_back(b_to_include.names[i]);
+          b.values.push_back(b_to_include.values[i]);
+          b_to_include.values[i].type = Block::ValueType::EMPTY;
+        }
+      }
+      else
+      {
+        printf("Warning: failed to load block %s required by #include command", path.c_str());
+      }
     }
     else
     {
@@ -1809,7 +1847,13 @@ void Block::add_detalization(Block &det)
   for (int i = 0; i < det.size(); i++)
   {
     int id = get_id(det.get_name(i));
-    if (id >= 0 && values[id].type == det.get_type(i))
+    if (id < 0) //add this value to the block 
+    {
+      names.push_back(det.get_name(i));
+      values.emplace_back();
+      values.back().copy(det.values[i]);
+    }
+    else if (values[id].type == det.get_type(i))
     {
       if (values[id].type == ValueType::BLOCK)
       {

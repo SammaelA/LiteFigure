@@ -1,0 +1,18 @@
+{
+    #include "templates/common.blk"
+    base_elem extends common.framed_image {
+        size:i2 = 512, 512
+        image { path:s = "images/block_1.png"}
+    }
+    figure {
+        type:e_FigureType = Grid
+        row {
+            elem extends base_elem { frame {color:p4 = 0,1,0,1 thickness:r = 0.01}}
+            elem extends base_elem { frame {color:p4 = 0,0,1,1 thickness:r = 0.02}}
+        }
+        row {
+            elem extends base_elem { frame {color:p4 = 1,1,1,1 thickness:r = 0.04}}
+            elem extends base_elem { frame {color:p4 = 1,0,0,1 thickness:r = 0.08}}
+        }
+    }
+}

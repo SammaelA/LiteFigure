@@ -1,0 +1,19 @@
+{
+common {
+framed_image {
+    type:e_FigureType = Collage
+    image {
+        pos:i2 = 0, 0
+        size:i2 = 512, 512
+        type:e_FigureType = PrimitiveImage
+    }
+    frame {
+        pos:i2 = 0, 0
+        size:i2 = 512, 512
+        type:e_FigureType = Rectangle
+        color:p4 = 0,1,0,1
+        thickness:r = 0.01
+    }        
+}
+}
+}
