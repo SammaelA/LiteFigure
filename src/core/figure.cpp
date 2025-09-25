@@ -330,7 +330,6 @@ namespace LiteFigure
 
   bool Transform::load(const Block *blk)
   {
-    std::shared_ptr<Transform> transform = std::make_shared<Transform>();
     size = blk->get_ivec2("size", size);
     crop = blk->get_vec4("crop", crop);
     scale = blk->get_vec2("scale", scale);
