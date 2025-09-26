@@ -139,6 +139,20 @@ namespace LiteFigure
     return true;
   }
 
+  bool is_default_font(const std::string &name)
+  {
+    static const char *default_fonts[] = {
+      "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
+      "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
+      "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
+      "Symbol", "ZapfDingbats",
+    };
+    for(int i=0; i<14; i++)
+      if (name == default_fonts[i])
+        return true;
+    return false;
+  }
+
   bool save_Glyph_to_pdf(Glyph *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     const Font &font = get_font(prim->font_name);
@@ -153,6 +167,13 @@ namespace LiteFigure
     ch[1] = '\0';
     float sz = PPP*prim->font_size;
     float2 sh = float2(-font.scale*glyph.xMin, font.scale*glyph.yMax);
+    if (is_default_font(prim->font_name))
+      pdf_set_font(pdf, prim->font_name.c_str());
+    else
+    {
+      pdf_set_font(pdf, "Times-Roman");
+      printf("[PDFGen]Warning: font %s is not a default font. It will not be rendered correctly\n", prim->font_name.c_str());
+    }
     int res = pdf_add_text_flip(pdf, nullptr, ch, sz, PPP*inst.pos.x + sh.x*sz, PPP*inst.pos.y + sh.y*sz, 
                                 float4_to_PDF_color(prim->color));
     if (res < 0)

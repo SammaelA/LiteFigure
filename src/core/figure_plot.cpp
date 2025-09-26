@@ -239,7 +239,7 @@ namespace LiteFigure
     default_text.alignment_x = TextAlignmentX::Center;
     default_text.alignment_y = TextAlignmentY::Center;
     default_text.color = blk->get_vec4("text_color", float4(0,0,0,1));
-    default_text.font_name = blk->get_string("font_name", "fonts/times-new-roman-regular.ttf");
+    default_text.font_name = blk->get_string("font_name", "Times-Roman");
     default_text.font_size = blk->get_int("font_size", 64);
     default_text.retain_height = false;
     default_text.retain_width = false;

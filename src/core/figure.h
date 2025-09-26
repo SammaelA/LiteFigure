@@ -225,7 +225,7 @@ namespace LiteFigure
 
     int font_size = 64;
     std::string text;
-    std::string font_name = "fonts/times-new-roman-regular.ttf";
+    std::string font_name = "Times-Roman";
     bool retain_width = false;
     bool retain_height = false;
     float4 color = float4(1,1,1,1);

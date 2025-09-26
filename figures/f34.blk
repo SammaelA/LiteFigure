@@ -1,0 +1,26 @@
+{
+  base_elem {
+    type:e_FigureType = Text
+    font_size:i = 64
+    color:p4 = 1,1,1,1
+    text:s = "The quick brown fox jumps over the lazy dog 0123456789"
+  }
+figure {
+    type:e_FigureType = Grid
+    row { elem extends base_elem { font_name:s = "Times-Roman"}}
+    row { elem extends base_elem { font_name:s = "Times-Italic"}}
+    row { elem extends base_elem { font_name:s = "Times-Bold"}}
+    row { elem extends base_elem { font_name:s = "Times-BoldItalic"}}
+    row { elem extends base_elem { font_name:s = "Courier"}}
+    row { elem extends base_elem { font_name:s = "Courier-Oblique"}}
+    row { elem extends base_elem { font_name:s = "Courier-Bold"}}
+    row { elem extends base_elem { font_name:s = "Courier-BoldOblique"}}
+    row { elem extends base_elem { font_name:s = "Helvetica"}}
+    row { elem extends base_elem { font_name:s = "Helvetica-Oblique"}}
+    row { elem extends base_elem { font_name:s = "Helvetica-Bold"}}
+    row { elem extends base_elem { font_name:s = "Helvetica-BoldOblique"}}
+    row { elem extends base_elem { font_name:s = "Symbol"}}
+    row { elem extends base_elem { font_name:s = "ZapfDingbats"}}
+    row { elem extends base_elem { font_name:s = "JetBrainsMono-Bold.ttf"}}
+}
+}

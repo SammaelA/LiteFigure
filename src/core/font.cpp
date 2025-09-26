@@ -10,7 +10,7 @@ namespace LiteFigure
     auto it = font_cache.find(filename);
     if (it == font_cache.end())
     {
-      font_cache[filename] = read_ttf(filename);
+      font_cache[filename] = read_ttf("fonts/" + filename);
     }
     return font_cache[filename];
   }
