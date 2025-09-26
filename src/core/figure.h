@@ -256,6 +256,15 @@ namespace LiteFigure
     std::vector<Circle> points;
   };
 
+  enum class LegendPosition
+  {
+    None,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    InsideGraph
+  };
   struct LinePlot : public Figure
   {
     virtual FigureType getType() const override { return FigureType::LinePlot; }

@@ -6,6 +6,16 @@
 
 namespace LiteFigure
 {
+	REGISTER_ENUM(LegendPosition,
+				  ([]()
+				   { return std::vector<std::pair<std::string, unsigned>>{
+             {"None", (unsigned)LegendPosition::None},
+						 {"TopLeft", (unsigned)LegendPosition::TopLeft},
+						 {"TopRight", (unsigned)LegendPosition::TopRight},
+             {"BottomLeft", (unsigned)LegendPosition::BottomLeft},
+             {"BottomRight", (unsigned)LegendPosition::BottomRight},
+             {"InsideGraph", (unsigned)LegendPosition::InsideGraph},
+					 }; })());
   bool LineGraph::load(const Block *blk)
   {
     size = blk->get_ivec2("size", size);
@@ -168,8 +178,7 @@ namespace LiteFigure
       text->text = name;
       text->retain_height = false;
       text->retain_width = false;
-      if (i==0)
-      text->verbose = true;
+
       if (legend_blk->get_block("text"))
         text->load(legend_blk->get_block("text"));
 
@@ -192,20 +201,22 @@ namespace LiteFigure
     int2 legend_size = int2(base_size.x*(1+2*horizontal_gap), 
                           base_size.y*(1+2*vertical_gap));
     int2 base_pos = int2(base_size.x*horizontal_gap, base_size.y*vertical_gap);
-    full_collage->elements.emplace_back();
-    full_collage->elements.back().pos = base_pos;
-    full_collage->elements.back().size = base_size;
-    full_collage->elements.back().figure = base_grid;
-    
+
     std::shared_ptr<Rectangle> border = std::make_shared<Rectangle>();
     border->color = border_color;
     border->thickness = border_thickness;
     if (legend_blk->get_block("border"))
       border->load(legend_blk->get_block("border"));
-    full_collage->elements.emplace_back();
-    full_collage->elements.back().pos = int2(0,0);
-    full_collage->elements.back().size = legend_size;
-    full_collage->elements.back().figure = border;
+
+    std::shared_ptr<PrimitiveFill> background = std::make_shared<PrimitiveFill>();
+    background->size = legend_size;
+    background->color = float4(1,1,1,1);
+    if (legend_blk->get_block("background"))
+      background->load(legend_blk->get_block("background"));
+
+    full_collage->elements.push_back(Collage::Element(int2(0,0), legend_size, background));
+    full_collage->elements.push_back(Collage::Element(base_pos, base_size, base_grid));
+    full_collage->elements.push_back(Collage::Element(int2(0,0), legend_size, border));
     return full_collage;
   }
 
@@ -215,6 +226,14 @@ namespace LiteFigure
 
     size = blk->get_ivec2("size", size);
     float4 background_color = blk->get_vec4("background_color", float4(1,1,1,1));
+    LegendPosition legend_position = LegendPosition::None;
+    float2 legend_pos = float2(1,1);
+    if (blk->get_block("legend"))
+    {
+      const Block *legend_blk = blk->get_block("legend");
+      legend_position = (LegendPosition)legend_blk->get_enum("position", (uint32_t)LegendPosition::InsideGraph);
+      legend_pos = legend_blk->get_vec2("pos", legend_pos);
+    }
 
     Text default_text;
     default_text.alignment_x = TextAlignmentX::Center;
@@ -433,6 +452,8 @@ namespace LiteFigure
       int2 real_size = y_ticks[i].calculateSize();
     }
 
+    FigurePtr legend = create_legend_collage(blk, default_text, default_line, size);
+
     std::shared_ptr<Collage> body = std::make_shared<Collage>();
     body->size = int2(size.x, size.y);
     {
@@ -484,6 +505,17 @@ namespace LiteFigure
       elem.size = int2(size.x-offset, size.y);
       elem.figure = std::make_shared<Line>(y_axis);
       body->elements.push_back(elem);
+    }
+    if (legend_position == LegendPosition::InsideGraph)
+    {
+      int2 legend_size = legend->calculateSize();
+      int2 offset = min(int2(legend_pos*float2(size)), size - legend_size - int2(1,1));
+      printf("legend pos %f %f\n", legend_pos.x, legend_pos.y);
+      Collage::Element elem;
+      elem.pos = offset;
+      elem.size = legend_size;
+      elem.figure = legend;
+      body->elements.push_back(elem); 
     }
 
     std::shared_ptr<Collage> y_ticks_collage = std::make_shared<Collage>();
@@ -545,10 +577,29 @@ namespace LiteFigure
     std::shared_ptr<Grid> full_graph_grid = std::make_shared<Grid>();
     full_graph_grid->rows.resize(2);
     full_graph_grid->rows[0].push_back(std::make_shared<Text>(header));
+    if (legend_position == LegendPosition::TopLeft)
+    {
+      full_graph_grid->rows[1].push_back(legend);
+    }
+    else if (legend_position == LegendPosition::BottomLeft)
+    {
+      int2 legend_size = legend->calculateSize();
+      std::shared_ptr<Collage> legend_collage = std::make_shared<Collage>();
+      legend_collage->elements.push_back(Collage::Element{int2(0,size.y - legend_size.y), legend_size, legend});
+      full_graph_grid->rows[1].push_back(legend_collage);
+    }
     full_graph_grid->rows[1].push_back(graph_grid);
-    if (blk->get_block("legend"))
-      full_graph_grid->rows[1].push_back(create_legend_collage(blk, default_text, 
-                                                               default_line, size));
+    if (legend_position == LegendPosition::TopRight)
+    {
+      full_graph_grid->rows[1].push_back(legend);
+    }
+    else if (legend_position == LegendPosition::BottomRight)
+    {
+      int2 legend_size = legend->calculateSize();
+      std::shared_ptr<Collage> legend_collage = std::make_shared<Collage>();
+      legend_collage->elements.push_back(Collage::Element{int2(0,size.y - legend_size.y), legend_size, legend});
+      full_graph_grid->rows[1].push_back(legend_collage);
+    }
 
     int2 sz_grid = full_graph_grid->calculateSize();
     float pad = 0.025f;
