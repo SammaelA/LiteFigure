@@ -1156,7 +1156,7 @@ std::string Block::get_string(const std::string name, std::string base_val) cons
 }
 Block *Block::get_block(std::string name, Block *base_val) const
 {
-  return get_block(get_id(name));
+  return get_block(get_id(name), base_val);
 }
 bool Block::get_arr(const std::string name, std::vector<double> &_values, bool replace) const
 {
