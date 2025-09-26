@@ -264,6 +264,8 @@ namespace LiteFigure
     virtual bool load(const Block *blk) override;
 
   private:
+    std::shared_ptr<Collage> create_legend_collage(const Block *blk, const Text &default_text,
+                                                   const Line &default_line, int2 full_size);
     Text header;
     PrimitiveFill background;
 

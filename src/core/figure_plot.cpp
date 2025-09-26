@@ -128,6 +128,87 @@ namespace LiteFigure
       return 1000.0f*round(tick/1000.0f);
   } 
 
+  std::shared_ptr<Collage> 
+  LinePlot::create_legend_collage(const Block *blk, const Text &default_text,
+                                  const Line &default_line, int2 full_size)
+  {
+    Block dummy_block;
+    const Block *legend_blk = blk->get_block("legend", &dummy_block);
+
+    float line_length = legend_blk->get_double("line_length", 0.25f);
+    float horizontal_gap = legend_blk->get_double("horizontal_gap", 0.05f);
+    float vertical_gap = legend_blk->get_double("vertical_gap", 0.05f);
+    float line_text_gap = legend_blk->get_double("line_text_gap", 0.05f);
+    float border_thickness = legend_blk->get_double("border_thickness", 0.01f);
+    float4 border_color = legend_blk->get_vec4("border_color", float4(0,0,0,1));
+
+    std::vector<const Block *> graph_blks;
+    for (int i=0;i<blk->size();i++)
+    {
+      if (blk->get_name(i) != "graph" || !blk->get_block(i))
+        continue;
+
+      graph_blks.push_back(blk->get_block(i));
+      //std::string name = graph_blk->get_string("name", "graph_" + std::to_string(graphs.size()));
+    } 
+
+    std::shared_ptr<Grid> base_grid = std::make_shared<Grid>();
+    base_grid->rows.resize(graph_blks.size());
+    for (int i=0;i<graph_blks.size();i++)
+    {
+      std::string name = graph_blks[i]->get_string("name", "Graph " + std::to_string(i));
+      std::shared_ptr<Line> line = std::make_shared<Line>(default_line);
+      line->size = int2(1,1);
+      if (graph_blks[i]->get_block("line"))
+        line->load(graph_blks[i]->get_block("line"));
+      line->start = float2(0,0.5f);
+      line->end = float2(line_length/(line_length+line_text_gap),0.5f);
+      std::shared_ptr<Text> text = std::make_shared<Text>(default_text);
+
+      text->text = name;
+      text->retain_height = false;
+      text->retain_width = false;
+      if (i==0)
+      text->verbose = true;
+      if (legend_blk->get_block("text"))
+        text->load(legend_blk->get_block("text"));
+
+      base_grid->rows[i].push_back(line);
+      base_grid->rows[i].push_back(text);
+    }
+
+    std::shared_ptr<Collage> full_collage = std::make_shared<Collage>();
+    int2 base_size = base_grid->calculateSize();
+
+    for (auto &row : base_grid->rows)
+    {
+      int2 text_size = row[1]->calculateSize();
+      row[0]->size = int2((line_length+line_text_gap)*base_size.x, text_size.y);
+      float th_mul = std::max(full_size.x, full_size.y)/std::max(row[0]->size.x, row[0]->size.y); 
+      std::dynamic_pointer_cast<Line>(row[0])->thickness *= th_mul;
+    }
+
+    base_size = base_grid->calculateSize(int2(base_size.x*(1+line_length+line_text_gap), base_size.y));
+    int2 legend_size = int2(base_size.x*(1+2*horizontal_gap), 
+                          base_size.y*(1+2*vertical_gap));
+    int2 base_pos = int2(base_size.x*horizontal_gap, base_size.y*vertical_gap);
+    full_collage->elements.emplace_back();
+    full_collage->elements.back().pos = base_pos;
+    full_collage->elements.back().size = base_size;
+    full_collage->elements.back().figure = base_grid;
+    
+    std::shared_ptr<Rectangle> border = std::make_shared<Rectangle>();
+    border->color = border_color;
+    border->thickness = border_thickness;
+    if (legend_blk->get_block("border"))
+      border->load(legend_blk->get_block("border"));
+    full_collage->elements.emplace_back();
+    full_collage->elements.back().pos = int2(0,0);
+    full_collage->elements.back().size = legend_size;
+    full_collage->elements.back().figure = border;
+    return full_collage;
+  }
+
   bool LinePlot::load(const Block *blk)
   {
     Block dummy_block;
@@ -465,6 +546,9 @@ namespace LiteFigure
     full_graph_grid->rows.resize(2);
     full_graph_grid->rows[0].push_back(std::make_shared<Text>(header));
     full_graph_grid->rows[1].push_back(graph_grid);
+    if (blk->get_block("legend"))
+      full_graph_grid->rows[1].push_back(create_legend_collage(blk, default_text, 
+                                                               default_line, size));
 
     int2 sz_grid = full_graph_grid->calculateSize();
     float pad = 0.025f;
