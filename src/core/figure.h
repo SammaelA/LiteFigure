@@ -251,9 +251,12 @@ namespace LiteFigure
     bool use_points = true;
     float point_size = 0.0067f;
     std::vector<float2> values; // in normalized coordinates (0..1)
+    std::vector<std::string> labels_str;
   private:
+    Text base_text;
     std::vector<Line> lines;
     std::vector<Circle> points;
+    std::vector<Text> labels;
   };
 
   enum class LegendPosition

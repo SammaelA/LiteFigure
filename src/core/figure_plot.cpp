@@ -18,11 +18,22 @@ namespace LiteFigure
 					 }; })());
   bool LineGraph::load(const Block *blk)
   {
-    size = blk->get_ivec2("size", size);
-    color = blk->get_vec4("color", color);
-    thickness = blk->get_double("thickness", thickness);
-    use_points = blk->get_bool("use_points", use_points);
-    point_size = blk->get_double("point_size", point_size);
+    const Block *line_blk = blk->get_block("line");
+    const Block *text_blk = blk->get_block("text");
+
+    if (line_blk)
+    {
+      size = line_blk->get_ivec2("size", size);
+      color = line_blk->get_vec4("color", color);
+      thickness = line_blk->get_double("thickness", thickness);
+      use_points = line_blk->get_bool("use_points", use_points);
+      point_size = line_blk->get_double("point_size", point_size);
+    }
+
+    if (text_blk)
+    {
+      base_text.load(text_blk);
+    }
     
     std::vector<float> x_values, y_values;
     blk->get_arr("x_values", x_values);
@@ -37,6 +48,14 @@ namespace LiteFigure
     for (int i = 0; i < x_values.size(); i++)
     {
       values.emplace_back(x_values[i], y_values[i]);
+    }
+
+    blk->get_arr("labels", labels_str);
+
+    if (!(labels_str.size() == 0 || labels_str.size() == values.size()))
+    {
+      printf("[LineGraph::load] if labels array is present, it must have the same size as values\n");
+      return false;
     }
 
     return true;
@@ -273,32 +292,15 @@ namespace LiteFigure
         continue;
 
       const Block *graph_blk = blk->get_block(i);
-      std::string name = graph_blk->get_string("name", "graph_" + std::to_string(graphs.size()));
-
-      std::vector<float> x_values, y_values;
-      graph_blk->get_arr("x_values", x_values);
-      graph_blk->get_arr("y_values", y_values);
-      if (x_values.size() != y_values.size())
-      {
-        printf("[LinePlot::load] x_values and y_values must be the same size\n");
-        return false;
-      }
-      if (x_values.size() < 2)
-      {
-        printf("[LinePlot::load] x_values and y_values must have at least 2 points\n");
-        return false;
-      }
       LineGraph graph;
-      graph.values.resize(x_values.size());
-      for (int j = 0; j < x_values.size(); j++)
+      bool graph_is_ok = graph.load(graph_blk);
+      if (!graph_is_ok)
+        continue;
+      
+      for (int j = 0; j < graph.values.size(); j++)
       {
-        graph.values[j] = float2(x_values[j], y_values[j]);
-        x_range = float2(std::min(x_range.x, x_values[j]), std::max(x_range.y, x_values[j]));
-        y_range = float2(std::min(y_range.x, y_values[j]), std::max(y_range.y, y_values[j]));
-      }
-      if (graph_blk->get_block("line"))
-      {
-        graph.load(graph_blk->get_block("line"));
+        x_range = float2(std::min(x_range.x, graph.values[j].x), std::max(x_range.y, graph.values[j].x));
+        y_range = float2(std::min(y_range.x, graph.values[j].y), std::max(y_range.y, graph.values[j].y));
       }
       graphs.push_back(graph);
     }
