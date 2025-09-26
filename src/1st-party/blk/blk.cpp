@@ -989,9 +989,9 @@ std::string Block::get_string(int id, std::string base_val) const
 {
   return (id >= 0 && id < size() && values[id].type == Block::ValueType::STRING && values[id].s) ? *(values[id].s) : base_val;
 }
-Block *Block::get_block(int id) const
+Block *Block::get_block(int id, Block *base_val) const
 {
-  return (id >= 0 && id < size() && values[id].type == Block::ValueType::BLOCK) ? values[id].bl : nullptr;
+  return (id >= 0 && id < size() && values[id].type == Block::ValueType::BLOCK) ? values[id].bl : base_val;
 }
 bool Block::get_arr(int id, std::vector<double> &_values, bool replace) const
 {
@@ -1154,7 +1154,7 @@ std::string Block::get_string(const std::string name, std::string base_val) cons
 {
   return get_string(get_id(name), base_val);
 }
-Block *Block::get_block(std::string name) const
+Block *Block::get_block(std::string name, Block *base_val) const
 {
   return get_block(get_id(name));
 }
@@ -1186,16 +1186,16 @@ bool Block::get_arr(const std::string name, std::vector<std::string> &_values, b
 {
   return get_arr(get_id(name), _values, replace);
 }
-Block *Block::get_block_rec(std::string name) const
+Block *Block::get_block_rec(std::string name, Block *base_val) const
 {
   auto it = name.find_first_of('.');
   if (it == std::string::npos)
-    return get_block(name);
+    return get_block(name, base_val);
   Block *child = get_block(name.substr(0, it));
   if (child)
-    return child->get_block_rec(name.substr(it + 1));
+    return child->get_block_rec(name.substr(it + 1), base_val);
   else
-    return nullptr;
+    return base_val;
 }
 
 std::string double_to_string(double val)

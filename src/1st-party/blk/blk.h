@@ -196,7 +196,7 @@ struct Block
   float4x4 get_mat4(int id, float4x4 base_val = float4x4()) const;
   unsigned get_enum(int id, unsigned base_val = 0) const;
   std::string get_string(int id, std::string base_val = "") const;
-  Block *get_block(int id) const;
+  Block *get_block(int id, Block *base_val = nullptr) const;
   bool get_arr(int id, std::vector<double> &values, bool replace = false) const;
   bool get_arr(int id, std::vector<float> &values, bool replace = false) const;
   bool get_arr(int id, std::vector<int> &values, bool replace = false) const;
@@ -218,8 +218,8 @@ struct Block
   float4x4 get_mat4(const std::string name, float4x4 base_val = float4x4()) const;
   unsigned get_enum(const std::string name, unsigned base_val = 0) const;
   std::string get_string(const std::string name, std::string base_val = "") const;
-  Block *get_block(std::string name) const;
-  Block *get_block_rec(std::string name) const; // can find blocks in sub-blocks, e.g "Block1.Block2.Block3"
+  Block *get_block(std::string name, Block *base_val = nullptr) const;
+  Block *get_block_rec(std::string name, Block *base_val = nullptr) const; // can find blocks in sub-blocks, e.g "Block1.Block2.Block3"
   bool get_arr(const std::string name, std::vector<double> &values, bool replace = false) const;
   bool get_arr(const std::string name, std::vector<float> &values, bool replace = false) const;
   bool get_arr(const std::string name, std::vector<int> &values, bool replace = false) const;
