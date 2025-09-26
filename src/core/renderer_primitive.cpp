@@ -1,5 +1,4 @@
 #include "renderer.h"
-#include <chrono>
 
 namespace LiteFigure
 {
@@ -94,7 +93,6 @@ namespace LiteFigure
 
 	void Renderer::render(const Line &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
-		auto t1 = std::chrono::high_resolution_clock::now();
 		float2 p0 = to_float2(instance.uv_transform * float3(prim.start.x, prim.start.y, 1));
 		float2 p1 = to_float2(instance.uv_transform * float3(prim.end.x, prim.end.y, 1));
 		p0 = LiteMath::clamp(p0, float2(0, 0), float2(1, 1));
@@ -174,9 +172,6 @@ namespace LiteFigure
 				}
 			}
 		}
-		auto t2 = std::chrono::high_resolution_clock::now();
-		float time_ms = std::chrono::duration<float, std::milli>(t2 - t1).count();
-		//printf("line render time: %f ms\n", time_ms);
 	}
 
 	void Renderer::render(const Circle &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
