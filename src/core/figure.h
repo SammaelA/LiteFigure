@@ -83,6 +83,8 @@ namespace LiteFigure
   {
     struct Element
     {
+      Element() = default;
+      Element(int2 _pos, int2 _size, FigurePtr _figure) : pos(_pos), size(_size), figure(_figure) {}
       int2 pos  = int2(0,0);
       int2 size = int2(-1,-1);
       FigurePtr figure;
@@ -231,6 +233,7 @@ namespace LiteFigure
     TextAlignmentX alignment_x = TextAlignmentX::Left;
     TextAlignmentY alignment_y = TextAlignmentY::Top;
   private:
+    int2 placeGlyphs();
     std::vector<int2> glyph_positions;
     std::vector<Glyph> glyphs;
     PrimitiveFill background_fill;
