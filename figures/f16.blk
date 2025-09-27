@@ -7,7 +7,7 @@
             font_size:i = 64
             color:p4 = 1,0.5,0.5,1
             text:s = "The quick brown fox jumps over the lazy dog"
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
         elem {
             type:e_FigureType = Text
@@ -15,7 +15,7 @@
             font_size:i = 128
             color:p4 = 0.5,0.5,1,1
             text:s = "The quick brown fox jumps over the lazy dog"
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
     }
     row {

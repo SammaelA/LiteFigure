@@ -8,7 +8,7 @@
             font_size:i = 64
             color:p4 = 1,1,1,1
             text:s = "The quick brown fox"
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
     }
     row {
@@ -20,7 +20,7 @@
             color:p4 = 1,1,1,1
             text:s = "The quick brown fox"
             alignment_x:e_TextAlignmentX = Right
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
     }
     row {
@@ -32,7 +32,7 @@
             color:p4 = 1,1,1,1
             text:s = "The quick brown fox jumps over thee lazy dog"
             alignment_x:e_TextAlignmentX = Right
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
     }
     row {
@@ -44,7 +44,7 @@
             color:p4 = 1,1,1,1
             text:s = "The quick brown fox jumps over the lazy dog"
             alignment_x:e_TextAlignmentX = Center
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
         }
     }
 }

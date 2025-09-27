@@ -50,7 +50,7 @@
             text:s = "Reference"
             color:p4 = 1,1,1,1
             alignment_x:e_TextAlignmentX = Center
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
           }
         }
         elem {
@@ -69,7 +69,7 @@
             text:s = "Method 1"
             color:p4 = 1,1,1,1
             alignment_x:e_TextAlignmentX = Center
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
           }
         }
         elem {
@@ -88,7 +88,7 @@
             text:s = "Method 2"
             color:p4 = 1,1,1,1
             alignment_x:e_TextAlignmentX = Center
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
           }
         }
         elem {
@@ -107,7 +107,7 @@
             text:s = "Ours method"
             color:p4 = 1,1,1,1
             alignment_x:e_TextAlignmentX = Center
-            font_name:s = "times-new-roman-regular.ttf"
+            font_name:s = "Times-Roman"
           }
         }
       }
