@@ -71,6 +71,10 @@ namespace LiteFigure
 			int cur_min_x = int(glyph_scale * float(glyph.xMin));
 			int cur_min_y = int(glyph_scale * float(glyph.yMin));
 
+			// to make sure our text is not cut off on the left
+			if (c_id == 0)
+				cur_x = -cur_min_x;
+
 			int2 g_size = int2(glyph_scale * sz) + int2(1, 1);
 			int pos_y = cur_y - cur_min_y + font.line_height * glyph_scale - g_size.y;
 			int2 g_pos = int2(cur_x + cur_min_x, pos_y);

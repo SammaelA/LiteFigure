@@ -1,0 +1,8 @@
+{
+  type:e_FigureType = Text
+  font_name:s = "Times-BoldItalic"
+  font_size:i = 256
+  color:p4 = 1,1,1,1
+  text:s = "m"
+  verbose:b = true
+}
