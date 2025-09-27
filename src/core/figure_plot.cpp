@@ -106,7 +106,7 @@ namespace LiteFigure
         text->retain_width = false;
 
         int2 text_box_size = text->calculateSize();
-        int off = 0.2*text_box_size.y;
+        int off = 0.1*text_box_size.y + use_points*std::max(size.x, size.y)*point_size;
         int2 pos = int2(float2(size)*values[i]) - int2(0.5*text_box_size.x, text_box_size.y + off);
         pos = clamp(pos, int2(0,0), size - text_box_size - int2(off, off));
 
