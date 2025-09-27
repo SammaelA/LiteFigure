@@ -58,6 +58,13 @@ namespace LiteFigure
       return false;
     }
 
+    labels_from_y_values = blk->get_bool("labels_from_y_values", labels_from_y_values);
+    if (labels_from_y_values && labels_str.size() != 0)
+    {
+      printf("[LineGraph::load] both labels and labels_from_y_values are present, explicit labels array will be used\n");
+      labels_from_y_values = false;
+    }
+
     return true;
   }
 
@@ -249,6 +256,8 @@ namespace LiteFigure
 
   bool LinePlot::load(const Block *blk)
   {
+    constexpr int MAX_TICK_TEXT_LEN = 16;
+
     Block dummy_block;
 
     size = blk->get_ivec2("size", size);
@@ -393,7 +402,6 @@ namespace LiteFigure
         x_ticks[i].load(blk->get_block("x_ticks"));
       }
 
-      constexpr int MAX_TICK_TEXT_LEN = 16;
       char buf[MAX_TICK_TEXT_LEN];
       snprintf(buf, MAX_TICK_TEXT_LEN, x_tick_format.c_str(), x_tick_values[i]);
       x_ticks[i].text = buf;
@@ -457,12 +465,26 @@ namespace LiteFigure
         y_ticks[i].load(blk->get_block("y_ticks"));
       }
 
-      constexpr int MAX_TICK_TEXT_LEN = 16;
       char buf[MAX_TICK_TEXT_LEN];
       snprintf(buf, MAX_TICK_TEXT_LEN, y_tick_format.c_str(), y_tick_values[i]);
       y_ticks[i].text = buf;
 
       int2 real_size = y_ticks[i].calculateSize();
+    }
+
+    // add labels from y values if needed
+    for (auto &graph : graphs)
+    {
+      if (!graph.labels_from_y_values)
+        continue;
+      for (float2 val : graph.values)
+      {
+        float y_real = (1-val.y) * (y_range.y - y_range.x) + y_range.x;
+        char buf[MAX_TICK_TEXT_LEN];
+        snprintf(buf, MAX_TICK_TEXT_LEN, y_tick_format.c_str(), y_real);
+        graph.labels_str.push_back(buf);
+      }
+      graph.rebuid();
     }
 
     FigurePtr legend = create_legend_collage(blk, default_text, default_line, size);

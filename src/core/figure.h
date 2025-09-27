@@ -254,6 +254,7 @@ namespace LiteFigure
     float point_size = 0.0067f;
     std::vector<float2> values; // in normalized coordinates (0..1)
     std::vector<std::string> labels_str;
+    bool labels_from_y_values = false;
   private:
     void rebuid();
 

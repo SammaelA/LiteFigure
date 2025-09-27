@@ -57,6 +57,7 @@
     y_values:arr = {24,26, 28, 30, 32, 34}
   }
   graph {
+    labels_from_y_values:b = true
     name:s = "My method"
     line {color:p4 = 1, 0, 0,1}
     x_values:arr = {3, 7, 11, 17, 27, 41, 67, 99}
