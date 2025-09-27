@@ -61,56 +61,64 @@ namespace LiteFigure
     return true;
   }
 
+  void LineGraph::rebuid()
+  {
+    line_graph_collage = std::make_shared<Collage>();
+    for (int i=0;i<values.size()-1;i++)
+    {
+      std::shared_ptr<Line> line = std::make_shared<Line>();
+      line->start = values[i];
+      line->end = values[i+1];
+      line->color = color;
+      line->size = size;
+      line->thickness = thickness;
+      line_graph_collage->elements.push_back(Collage::Element(int2(0,0), size, line));
+    }
+    if (use_points)
+    {
+      for (int i=0;i<values.size();i++)
+      {
+        std::shared_ptr<Circle> point = std::make_shared<Circle>();
+        point->center = values[i];
+        point->radius = point_size;
+        point->color = color;
+        point->size = size;
+        line_graph_collage->elements.push_back(Collage::Element(int2(0,0), size, point));
+      }
+    }
+    if (!labels_str.empty())
+    {
+      //there are the same number of labels as values
+      for (int i=0;i<values.size();i++)
+      {
+        if (labels_str[i].empty())
+          continue;
+        std::shared_ptr<Text> text = std::make_shared<Text>(base_text);
+        text->text = labels_str[i];
+        text->retain_height = false;
+        text->retain_width = false;
+
+        int2 text_box_size = text->calculateSize();
+        int off = 0.2*text_box_size.y;
+        int2 pos = int2(float2(size)*values[i]) - int2(0.5*text_box_size.x, text_box_size.y + off);
+        pos = clamp(pos, int2(0,0), size - text_box_size - int2(off, off));
+
+        line_graph_collage->elements.push_back(Collage::Element(pos, text_box_size, text));
+      }
+    }
+  }
+
   int2 LineGraph::calculateSize(int2 force_size)
   {
-    if (is_valid_size(force_size))
-      size = force_size;
+    if (!line_graph_collage)
+      rebuid();
+    size = line_graph_collage->calculateSize(force_size);
     return size;
   }
 
   void LineGraph::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
-    //TODO: handle invalid values (<0 or >1)
-    lines.resize(values.size() - 1);
-    for (int i=0;i<lines.size();i++)
-    {
-      lines[i].size = size;
-      lines[i].start = values[i];
-      lines[i].end = values[i + 1];
-      lines[i].thickness = thickness;
-      lines[i].color = color;
-    }
-
-    if (use_points)
-    {
-      points.clear();
-      points.resize(values.size());
-      for (int i=0;i<points.size();i++)
-      {
-        points[i].size = size;
-        points[i].center = values[i];
-        points[i].radius = point_size;
-        points[i].color = color;
-      }
-    }
-
-    for (auto &line : lines)
-    {
-      Instance inst;
-      inst.prim = &line;
-      inst.data.pos = pos;
-      inst.data.size = size;
-      out_instances.push_back(inst);
-    }
-
-    for (auto &point : points)
-    {
-      Instance inst;
-      inst.prim = &point;
-      inst.data.pos = pos;
-      inst.data.size = size;
-      out_instances.push_back(inst);
-    }
+    line_graph_collage->prepareInstances(pos, out_instances);
   }
 
   std::string default_format_from_range(float min, float max)
@@ -293,6 +301,7 @@ namespace LiteFigure
 
       const Block *graph_blk = blk->get_block(i);
       LineGraph graph;
+      graph.base_text = default_text;
       bool graph_is_ok = graph.load(graph_blk);
       if (!graph_is_ok)
         continue;
@@ -322,6 +331,8 @@ namespace LiteFigure
         val.x = (val.x - x_range.x) / (x_range.y - x_range.x);
         val.y = 1.0f - (val.y - y_range.x) / (y_range.y - y_range.x);
       }
+      graph.size = size;
+      graph.rebuid();
     }
 
     x_axis = default_line;

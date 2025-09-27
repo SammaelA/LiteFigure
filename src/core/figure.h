@@ -239,8 +239,10 @@ namespace LiteFigure
     PrimitiveFill background_fill;
   };
 
+  struct LinePlot;
   struct LineGraph : public Figure
   {
+    friend struct LinePlot; 
     virtual FigureType getType() const override { return FigureType::LineGraph; }
     virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override;
     virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override;
@@ -253,10 +255,10 @@ namespace LiteFigure
     std::vector<float2> values; // in normalized coordinates (0..1)
     std::vector<std::string> labels_str;
   private:
+    void rebuid();
+
     Text base_text;
-    std::vector<Line> lines;
-    std::vector<Circle> points;
-    std::vector<Text> labels;
+    std::shared_ptr<Collage> line_graph_collage;
   };
 
   enum class LegendPosition
