@@ -20,9 +20,10 @@ namespace LiteFigure
 
 	void solve_quadratic(float a, float b, float c, float &x1, float &x2)
 	{
-		if (std::abs(a) < 1e-9f)
+		if (std::abs(a) < 1e-6f)
 		{
-			x1 = -c / b;
+			if (std::abs(b) > 1e-6f)
+				x1 = -c / b;
 			return;
 		}
 
@@ -60,22 +61,19 @@ namespace LiteFigure
 
 				for (int i = 0; i < lines.size(); i++)
 				{
-					if (p.y < line_y_limits[i].x || p.y > line_y_limits[i].y)
+					if (p.y < line_y_limits[i].x || p.y >= line_y_limits[i].y)
 						continue;
 
 					// intersect ray y = p.y with lines
 					float t = -(lines[i].p0.y - p.y) / (lines[i].p1.y - lines[i].p0.y);
-					if (t > 0 && t < 1)
-					{
-						float x = lines[i].p0.x + (lines[i].p1.x - lines[i].p0.x) * t;
-						if (x > p.x)
-							intersections++;
-					}
+					float inter_x = lines[i].p0.x + (lines[i].p1.x - lines[i].p0.x) * t;
+					if (t > 0 && t < 1 && inter_x > p.x)
+						intersections++;
 				}
 
 				for (int i = 0; i < beziers.size(); i++)
 				{
-					if (p.y < bezier_y_limits[i].x || p.y > bezier_y_limits[i].y)
+					if (p.y < bezier_y_limits[i].x || p.y >= bezier_y_limits[i].y)
 						continue;
 
 					// intersect ray y = p.y with bezier
@@ -84,18 +82,12 @@ namespace LiteFigure
 					float c = beziers[i].p0.y - p.y;
 					float t1 = 1000, t2 = 1000;
 					solve_quadratic(a, b, c, t1, t2);
-					if (t1 > 0 && t1 < 1)
-					{
-						float x = quadratic_bezier(beziers[i], t1).x;
-						if (x > p.x)
-							intersections++;
-					}
-					if (t2 > 0 && t2 < 1)
-					{
-						float x = quadratic_bezier(beziers[i], t2).x;
-						if (x > p.x)
-							intersections++;
-					}
+					float inter_x1 = quadratic_bezier(beziers[i], t1).x;
+					float inter_x2 = quadratic_bezier(beziers[i], t2).x;
+					if (t1 >= 0 && t1 < 1 && inter_x1 > p.x)
+						intersections++;
+					if (t2 >= 0 && t2 < 1 && inter_x2 > p.x)
+						intersections++;
 				}
 
 				if (intersections % 2)

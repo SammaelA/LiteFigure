@@ -1,6 +1,6 @@
 {
   type:e_FigureType = LinePlot
-  size:i2 = 2048,1024
+  size:i2 = 4096,2048
 
   header { text:s = "SCom2 experiments 26.09.25 - 1" font_size:i = 96 }
 
