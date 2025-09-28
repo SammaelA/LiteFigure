@@ -96,10 +96,33 @@ namespace LiteFigure
 		}
 	}
 
-	void Renderer::render(const Glyph &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const
+	void render_glyph_sdf(int2 pos, int2 size, float4 color, const TTFSimpleGlyph &glyph,
+												const GlyphSDF &sdf_image, LiteImage::Image2D<float4> &out_image)
 	{
-		const Font &font = get_font(prim.font_name);
-		const TTFSimpleGlyph &glyph = font.glyphs[prim.glyph_id];
+		float2 s_size = float2(sdf_image.width, sdf_image.height);
+		for (int y = 0; y < size.y; y++)
+		{
+			for (int x = 0; x < size.x; x++)
+			{
+				float2 p = s_size*float2((x + 0.5f) / size.x, (y + 0.5f) / size.y);
+				int2 ip = int2(floorf(p.x), floorf(p.y));
+				float2 dp = p - float2(floorf(p.x), floorf(p.y));
+				int off = ip.y * sdf_image.width + ip.x;
+				int2 advance = int2(ip.x < sdf_image.width - 1 ? 1 : 0, ip.y < sdf_image.height - 1 ? sdf_image.width : 0);
+				float sdf00 = sdf_image.data[off];
+				float sdf01 = sdf_image.data[off + advance.x];
+				float sdf10 = sdf_image.data[off + advance.y];
+				float sdf11 = sdf_image.data[off + advance.x + advance.y];
+				float val = (1 - dp.x) * (1 - dp.y) * sdf00 + dp.x * (1 - dp.y) * sdf01 + (1 - dp.x) * dp.y * sdf10 + dp.x * dp.y * sdf11;
+				if (val > 0.0f)
+					out_image[int2(pos.x + x, pos.y + y)] = alpha_blend(color, out_image[int2(pos.x + x, pos.y + y)]);
+			}
+		}
+	}
+
+	void render_glyph_bezier(int2 pos, int2 size, float4 color, const TTFSimpleGlyph &glyph,
+													 LiteImage::Image2D<float4> &out_image)
+	{
 		float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
 
 		std::vector<GlyphLine> lines;
@@ -144,6 +167,71 @@ namespace LiteFigure
 
 		// printf("render glyph %s %d, size %dx%d, pos %dx%d\n", prim.font_name.c_str(), prim.glyph_id,
 		// 	data.size.x, data.size.y, data.pos.x, data.pos.y);
-		render_bezier_glyph_bruteforce(data.pos, data.size, prim.color, lines, beziers, out);
+		render_bezier_glyph_bruteforce(pos, size, color, lines, beziers, out_image);
+	}
+
+	void create_sdf(int base_scale, int radius, LiteImage::Image2D<float4> &in_image, LiteImage::Image2D<float> &out_image)
+	{
+		int w  = out_image.width();
+		int h  = out_image.height();
+		int iw = in_image.width();
+		int ih = in_image.height();
+		LiteImage::Sampler sampler = LiteImage::Sampler();
+		sampler.filter = LiteImage::Sampler::Filter::LINEAR;
+		sampler.borderColor = float4(0, 0, 0, 0);
+		sampler.addressU = LiteImage::Sampler::AddressMode::CLAMP;
+		sampler.addressV = LiteImage::Sampler::AddressMode::CLAMP;
+
+		float2 step = float2((float)1 / iw, (float)1 / ih);
+
+		for (int i = 0; i < h; i++)
+		{
+			for (int j = 0; j < w; j++)
+			{
+				float2 tc = float2((j+0.5f) / w, (i+0.5f) / h);
+				float val0 = in_image.sample(sampler, tc).x;
+				bool inside = val0 > 0.5f;
+
+				float min_dist = sqrt(2 * radius * radius);
+				float d = min_dist;
+				for (int i1 = -radius; i1 <= radius; i1++)
+				{
+					for (int j1 = -radius; j1 <= radius; j1++)
+					{
+						float val = in_image.sample(sampler, float2(tc.x + i1 * step.x, tc.y + j1 * step.y)).x;
+						if ((val > 0.5f) != inside)
+							min_dist = std::min<float>(min_dist, sqrt(i1 * i1 + j1 * j1));
+					}
+				}
+				float v = inside ? min_dist / d : -min_dist / d;
+				out_image.data()[i * w + j] = v;
+			}
+		}
+	}
+
+	LiteImage::Image2D<float> create_glyph_sdf(int base_sdf_size, int base_scale, int radius, const TTFSimpleGlyph &glyph)
+	{
+		float2 sz = float2(glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin);
+		float2 scale = float2(sz.x/std::max(sz.x, sz.y), sz.y/std::max(sz.x, sz.y));
+		int2 sdf_size = int2(base_sdf_size * scale.x, base_sdf_size * scale.y);
+		int2 glyph_size = base_scale * sdf_size;
+
+		LiteImage::Image2D<float4> glyph_image(glyph_size.x, glyph_size.y);
+		render_glyph_bezier(int2(0, 0), glyph_size, float4(1, 1, 1, 1), glyph, glyph_image);
+		LiteImage::Image2D<float> sdf_image(sdf_size.x, sdf_size.y);
+		create_sdf(base_scale, radius, glyph_image, sdf_image);
+
+		return sdf_image;
+	}
+
+	void Renderer::render(const Glyph &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const
+	{
+		const Font &font = get_font(prim.font_name);
+		const TTFSimpleGlyph &glyph = font.glyphs[prim.glyph_id];
+		// if there is no SDF glyph, or the glyph is too big, render it with bezier
+		if (font.glyphs_sdf[prim.glyph_id].height == 0 || prim.size.y > 3*font.glyphs_sdf[prim.glyph_id].height)
+			render_glyph_bezier(data.pos, data.size, prim.color, glyph, out);
+		else
+			render_glyph_sdf(data.pos, data.size, prim.color, glyph, font.glyphs_sdf[prim.glyph_id], out);
 	}
 }

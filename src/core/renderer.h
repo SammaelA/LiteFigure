@@ -36,4 +36,7 @@ namespace LiteFigure
 		void render(const Rectangle &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
     void render(const Glyph &prim, const InstanceData &data, LiteImage::Image2D<float4> &out) const;
   };
+
+	struct TTFSimpleGlyph;
+	LiteImage::Image2D<float> create_glyph_sdf(int base_sdf_size, int base_scale, int radius, const TTFSimpleGlyph &glyph);
 }

@@ -49,6 +49,13 @@ namespace LiteFigure
     TTFLongHorMetric advance; //not in glyf table, but we store it here for convenience
     std::vector<Contour> contours;
   };  
+   
+  struct GlyphSDF
+  {
+    int16_t width = 0;
+    int16_t height = 0;
+    std::vector<int8_t> data;
+  };
 	
   struct Font
   {
@@ -57,6 +64,7 @@ namespace LiteFigure
     int16_t ascent = 0; //in FUnits
     int16_t descent = 0; //in FUnits
     std::vector<TTFSimpleGlyph> glyphs;
+    std::vector<GlyphSDF>   glyphs_sdf; //one for each glyph, but some can be empty
     TTFCmapTable cmap;
   };
 
