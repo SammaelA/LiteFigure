@@ -1,3 +1,6 @@
 [submodule "src/1st-party/LiteMath"]
 	path = src/1st-party/LiteMath
 	url = https://github.com/msu-graphics-group/LiteMath
+[submodule "src/1st-party/blk"]
+	path = src/1st-party/blk
+	url = https://github.com/SammaelA/blk.git
