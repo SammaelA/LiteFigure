@@ -655,7 +655,23 @@ namespace LiteFigure
   
   void LinePlot::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
-    full_graph_collage->prepareInstances(pos, out_instances);
+    //all text must be rendered on top of ther elements
+    std::vector<Instance> local_instances;
+    full_graph_collage->prepareInstances(pos, local_instances);
+
+    //first, add everything except text
+    for (auto &it : local_instances)
+    {
+      if (it.prim->getType() != FigureType::Glyph && it.prim->getType() != FigureType::Text)
+        out_instances.push_back(it);
+    }
+
+    //then text
+    for (auto &it : local_instances)
+    {
+      if (it.prim->getType() == FigureType::Glyph || it.prim->getType() == FigureType::Text)
+        out_instances.push_back(it);
+    }
   }
 
   int2 LinePlot::calculateSize(int2 force_size)
