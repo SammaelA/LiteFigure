@@ -2,6 +2,8 @@
 #include "templates.h"
 #include "renderer.h"
 #include "font.h"
+#include "csv/csv.h"
+
 #include <cstdio>
 
 namespace LiteFigure
@@ -16,24 +18,33 @@ namespace LiteFigure
              {"BottomRight", (unsigned)LegendPosition::BottomRight},
              {"InsideGraph", (unsigned)LegendPosition::InsideGraph},
 					 }; })());
+
+  bool LineGraph::load_line_params(const Block *line_blk)
+  {
+    if (!line_blk)
+      return true;
+
+    size = line_blk->get_ivec2("size", size);
+    color = line_blk->get_vec4("color", color);
+    thickness = line_blk->get_double("thickness", thickness);
+    use_points = line_blk->get_bool("use_points", use_points);
+    point_size = line_blk->get_double("point_size", point_size);
+
+    return true;
+  }
+
+  bool LineGraph::load_text_params(const Block *text_blk)
+  {
+    if (!text_blk)
+      return true;
+    
+    return base_text.load(text_blk);
+  }
+
   bool LineGraph::load(const Block *blk)
   {
-    const Block *line_blk = blk->get_block("line");
-    const Block *text_blk = blk->get_block("text");
-
-    if (line_blk)
-    {
-      size = line_blk->get_ivec2("size", size);
-      color = line_blk->get_vec4("color", color);
-      thickness = line_blk->get_double("thickness", thickness);
-      use_points = line_blk->get_bool("use_points", use_points);
-      point_size = line_blk->get_double("point_size", point_size);
-    }
-
-    if (text_blk)
-    {
-      base_text.load(text_blk);
-    }
+    load_line_params(blk->get_block("line"));
+    load_text_params(blk->get_block("text"));
     
     std::vector<float> x_values, y_values;
     blk->get_arr("x_values", x_values);
@@ -254,6 +265,101 @@ namespace LiteFigure
     return full_collage;
   }
 
+  bool LinePlot::load_graphs_block(const Block *blk, const Text &default_text,
+                                   const Line &default_line, int2 full_size)
+  {
+    std::shared_ptr<csv::Table> filtered_csv;
+    const Block *data_blk = blk->get_block("data");
+    if (!data_blk)
+    {
+      fprintf(stderr, "[LinePlot::load_graphs_block] \"data\" block not found\n");
+      return false;
+    }
+
+    {
+      csv::Slice slice = csv::load_csv_slice(data_blk);
+      if (!slice.data || slice.getRowCount() == 0 || slice.data->columns.size() == 0)
+      {
+        fprintf(stderr, "[LinePlot::load_graphs_block] csv load failed\n");
+        return false;
+      }
+      filtered_csv = slice.toTable();
+    }
+
+    std::string group_by_col = blk->get_string("group_by");
+    std::string names_col = blk->get_string("names");
+    std::string labels_col = blk->get_string("labels");
+    std::string x_values_col = blk->get_string("x_values");
+    std::string y_values_col = blk->get_string("y_values");
+
+    std::map<std::string, std::vector<int>> group_map;
+    if (group_by_col == "")
+    {
+      std::vector<int> all_indices(filtered_csv->row_count);
+      for (int i = 0; i < filtered_csv->row_count; i++)
+        all_indices[i] = i;
+      group_map[""] = all_indices;
+    }
+    else
+    {
+      int group_idx = filtered_csv->get_column_idx(group_by_col);
+      if (group_idx == -1)
+      {
+        fprintf(stderr, "[LinePlot::load_graphs_block] group_by column \"%s\" is not found\n", group_by_col.c_str());
+        return false;
+      }
+
+      for (int i = 0; i < filtered_csv->row_count; i++)
+        group_map[filtered_csv->columns[group_idx][i]].push_back(i);
+    }
+
+    std::vector<float> all_x_values, all_y_values;
+    std::vector<std::string> all_labels;
+    if (filtered_csv->get_column_idx(labels_col) != -1)
+    {
+      all_labels = filtered_csv->columns[filtered_csv->get_column_idx(labels_col)];
+    }
+    //else it is ok to have no labels
+
+    if (filtered_csv->get_column_idx(x_values_col) != -1)
+    {
+      all_x_values = csv::toFloatArray(filtered_csv->columns[filtered_csv->get_column_idx(x_values_col)]);
+    }
+    else
+    {
+      fprintf(stderr, "[LinePlot::load_graphs_block] x_values column \"%s\" is not found\n", x_values_col.c_str());
+      return false;
+    }
+
+    if (filtered_csv->get_column_idx(y_values_col) != -1)
+    {
+      all_y_values = csv::toFloatArray(filtered_csv->columns[filtered_csv->get_column_idx(y_values_col)]);
+    }
+    else
+    {
+      fprintf(stderr, "[LinePlot::load_graphs_block] y_values column \"%s\" is not found\n", y_values_col.c_str());
+      return false;
+    }
+
+    int names_idx = filtered_csv->get_column_idx(names_col);
+    for (auto &p : group_map)
+    {
+      LineGraph graph;
+      graph.name = names_idx == -1 ? ("Graph " + std::to_string(graphs.size())) : filtered_csv->columns[names_idx][p.second[0]];
+      for (int idx : p.second)
+      {
+        graph.values.push_back(float2(all_x_values[idx], all_y_values[idx]));
+        if (all_labels.size() > 0)
+          graph.labels_str.push_back(all_labels[idx]);
+      }
+      graph.load_line_params(blk->get_block("line"));
+      graph.load_text_params(blk->get_block("text"));
+      graphs.push_back(graph);
+    }
+
+    return true;
+  }
+
   bool LinePlot::load(const Block *blk)
   {
     constexpr int MAX_TICK_TEXT_LEN = 16;
@@ -305,22 +411,35 @@ namespace LiteFigure
     float2 y_range = float2(1e38f, -1e38f);
     for (int i=0;i<blk->size();i++)
     {
-      if (blk->get_name(i) != "graph" || !blk->get_block(i))
+      if (!blk->get_block(i))
         continue;
 
-      const Block *graph_blk = blk->get_block(i);
-      LineGraph graph;
-      graph.base_text = default_text;
-      bool graph_is_ok = graph.load(graph_blk);
-      if (!graph_is_ok)
-        continue;
-      
+      if (blk->get_name(i) == "graph") //load graph directly from data
+      {
+        const Block *graph_blk = blk->get_block(i);
+        LineGraph graph;
+        graph.base_text = default_text;
+        bool graph_is_ok = graph.load(graph_blk);
+        if (!graph_is_ok)
+          continue;
+    
+        graphs.push_back(graph);
+      }
+      else if (blk->get_name(i) == "graphs") //load one or multiple line graphs from csv or similar data
+      {
+        bool graphs_loaded = load_graphs_block(blk->get_block(i), default_text, default_line, size);
+        if (!graphs_loaded)
+          printf("[LinePlot] Warning: failed to load line graphs from \"graphs\" block\n");
+      }
+    }
+
+    for (const auto &graph : graphs)
+    {
       for (int j = 0; j < graph.values.size(); j++)
       {
         x_range = float2(std::min(x_range.x, graph.values[j].x), std::max(x_range.y, graph.values[j].x));
         y_range = float2(std::min(y_range.x, graph.values[j].y), std::max(y_range.y, graph.values[j].y));
       }
-      graphs.push_back(graph);
     }
 
     //increase range by 5% on each side to make plot look nice

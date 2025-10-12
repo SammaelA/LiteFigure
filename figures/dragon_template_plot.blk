@@ -1,0 +1,29 @@
+{
+  #include "templates/plots.blk"
+  figure extends plots.memory_quality_plot
+  {
+    header { text:s = "Memory-Quality graph for different SDF building methods (Dragon)" }
+    graphs {
+      data { // here is a data used to create graphs
+        path:s = "images/render.csv"
+        filter { // include only experiments on drago model
+          column:s = "model_name"
+          value:s = "drago"
+        }
+        filter { // exclude meshes
+          column:s = "type"
+          value:s = "MESH"
+          exclude:b = true
+        }
+        filter { // include only the given backend
+          column:s = "backend"
+          values:arr = {"GPU", "GPU_COMP"}
+        }
+        filter { // include only experiments on NVIDIA GPUs
+          column:s = "device"
+          regex:s = ".*NVIDIA.*"
+        }
+      }
+    }
+  }
+}

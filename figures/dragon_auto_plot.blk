@@ -1,0 +1,46 @@
+{
+  type:e_FigureType = LinePlot
+  size:i2 = 4096,2048
+
+  header { text:s = "Memory-Quality graph for different SDF building methods (Dragon)" font_size:i = 96 }
+
+  // legend { line_length:r = 0.2f text{font_size:i = 96}}
+
+  x_label { text:s = "Size (MB)"}
+  y_label { text:s = "PSNR" }
+
+  // define all graphs creation from a given csv file
+  // several graph/graphs blocks can be present, all
+  // graphs will be put on the plot together
+  graphs {
+    data { // here is a data used to create graphs
+      path:s = "images/render.csv"
+      filter { // include only experiments on drago model
+        column:s = "model_name"
+        value:s = "drago"
+      }
+      filter { // exclude meshes
+        column:s = "type"
+        value:s = "MESH"
+        exclude:b = true
+      }
+      filter { // include only the given backend
+        column:s = "backend"
+        values:arr = {"GPU", "GPU_COMP"}
+      }
+      filter { // include only experiments on NVIDIA GPUs
+        column:s = "device"
+        regex:s = ".*NVIDIA.*"
+      }
+    }
+
+    group_by:s = "tag"            // column name to use for grouping data
+    names:s = "tag"               // column name to use for names of graphs
+    labels:s = "config_name"      // column name to use for labels of data points
+    x_values:s = "model_size(Mb)" // column name to use for x values
+    y_values:s = "psnr_average"   // column name to use for y values
+
+    line {color:p4 = 0,0,1,1} 
+    text {color:p4 = 0,0,0,1 font_name:s = "Courier-Bold"}
+  }
+}

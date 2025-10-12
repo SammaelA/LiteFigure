@@ -252,10 +252,13 @@ namespace LiteFigure
     float thickness = 0.005f;
     bool use_points = true;
     float point_size = 0.0067f;
+    std::string name = "unnamed graph";
     std::vector<float2> values; // in normalized coordinates (0..1)
     std::vector<std::string> labels_str;
     bool labels_from_y_values = false;
   private:
+    bool load_line_params(const Block *blk);
+    bool load_text_params(const Block *blk);
     void rebuid();
 
     Text base_text;
@@ -281,6 +284,9 @@ namespace LiteFigure
   private:
     std::shared_ptr<Collage> create_legend_collage(const Block *blk, const Text &default_text,
                                                    const Line &default_line, int2 full_size);
+    bool load_graphs_block(const Block *blk, const Text &default_text,
+                           const Line &default_line, int2 full_size);
+
     Text header;
     PrimitiveFill background;
 

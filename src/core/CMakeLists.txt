@@ -2,6 +2,7 @@ file(GLOB CORE_SOURCES "*.cpp" "*.h")
 
 set(CORE_SOURCES ${CORE_SOURCES} 
     ${CMAKE_SOURCE_DIR}/src/1st-party/blk/blk.cpp
+    ${CMAKE_SOURCE_DIR}/src/1st-party/csv/csv.cpp
     ${CMAKE_SOURCE_DIR}/src/1st-party/LiteMath/Image2d.cpp
     ${CMAKE_SOURCE_DIR}/src/3rd-party/pdfgen.c)
 

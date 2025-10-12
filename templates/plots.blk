@@ -1,0 +1,33 @@
+{
+  plots
+  {
+    // take data in new LiteRT benchmark format to plot it on the
+    // memory-quality coordinate plane
+    memory_quality_plot
+    {
+      type:e_FigureType = LinePlot
+      size:i2 = 4096,2048
+
+      header { text:s = "Memory-Quality Graph Template" font_size:i = 96 }
+
+      // legend { line_length:r = 0.2f text{font_size:i = 96}}
+
+      x_label { text:s = "Size (MB)"}
+      y_label { text:s = "PSNR" }
+
+      // define all graphs creation from a given csv file
+      // several graph/graphs blocks can be present, all
+      // graphs will be put on the plot together
+      graphs {
+        group_by:s = "tag"            // column name to use for grouping data
+        names:s = "tag"               // column name to use for names of graphs
+        labels:s = "config_name"      // column name to use for labels of data points
+        x_values:s = "model_size(Mb)" // column name to use for x values
+        y_values:s = "psnr_average"   // column name to use for y values
+
+        line {color:p4 = 0,0,1,1} 
+        text {color:p4 = 0,0,0,1}
+      }
+    }
+  }    
+}
