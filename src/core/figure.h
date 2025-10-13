@@ -274,6 +274,14 @@ namespace LiteFigure
     BottomRight,
     InsideGraph
   };
+
+  enum class ColorPalette
+  {
+    Gray10, //10 shades of gray
+    Set1, //Set1 colormap from Matplotlib
+    Set2, //Set2 colormap from Matplotlib
+  };
+
   struct LinePlot : public Figure
   {
     virtual FigureType getType() const override { return FigureType::LinePlot; }

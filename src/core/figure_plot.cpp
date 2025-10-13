@@ -19,6 +19,43 @@ namespace LiteFigure
              {"InsideGraph", (unsigned)LegendPosition::InsideGraph},
 					 }; })());
 
+	REGISTER_ENUM(ColorPalette,
+				  ([]()
+				   { return std::vector<std::pair<std::string, unsigned>>{
+             {"Gray10", (unsigned)ColorPalette::Gray10},
+						 {"Set1", (unsigned)ColorPalette::Set1},
+						 {"Set2", (unsigned)ColorPalette::Set2},
+					 }; })());
+
+  std::vector<float4> get_palette(ColorPalette type)
+  {
+    std::vector<float4> rp = {float4(1,0,0,1)};
+    switch (type)
+    {
+    case ColorPalette::Gray10:
+      rp =   {float4(0.0,0.0,0.0,1), float4(0.1,0.1,0.1,1), float4(0.2,0.2,0.2,1), float4(0.3,0.3,0.3,1), float4(0.4,0.4,0.4,1),
+              float4(0.5,0.5,0.5,1), float4(0.6,0.6,0.6,1), float4(0.7,0.7,0.7,1), float4(0.8,0.8,0.8,1), float4(0.9,0.9,0.9,1)};
+      break;
+    case ColorPalette::Set1:
+      rp =   {float4(0.89411765, 0.10196078, 0.10980392, 1), float4(0.21568627, 0.49411765, 0.72156863, 1), float4(0.30196078, 0.68627451, 0.29019608, 1), 
+              float4(0.59607843, 0.30588235, 0.63921569, 1), float4(1.0       , 0.49803922, 0.        , 1), float4(1.0       , 1.0       , 0.2       , 1),
+              float4(0.65098039, 0.3372549 , 0.15686275, 1), float4(0.96862745, 0.50588235, 0.74901961, 1), float4(0.6       , 0.6       , 0.6       , 1)};
+      break;
+    case ColorPalette::Set2:
+      rp =   {float4(0.4       , 0.76078431, 0.64705882, 1), float4(0.98823529, 0.55294118, 0.38431373, 1), float4(0.55294118, 0.62745098, 0.79607843, 1), 
+              float4(0.90588235, 0.54117647, 0.76470588, 1), float4(0.65098039, 0.84705882, 0.32941176, 1), float4(1.0       , 0.85098039, 0.18431373, 1),
+              float4(0.89803922, 0.76862745, 0.58039216, 1), float4(0.70196078, 0.70196078, 0.70196078, 1)};
+      break;
+    }
+
+    //gamma correction for row palette colors
+    //can be done in compile time, but who cares
+    for (auto &v : rp)
+      v = float4(pow(v.x,2.2f), pow(v.y,2.2f), pow(v.z,2.2f), pow(v.w,2.2f));
+
+    return rp;
+  }
+
   bool LineGraph::load_line_params(const Block *line_blk)
   {
     if (!line_blk)
@@ -341,10 +378,13 @@ namespace LiteFigure
       return false;
     }
 
+    auto palette = get_palette((ColorPalette)blk->get_enum("palette", (uint32_t)ColorPalette::Set1));
+
     int names_idx = filtered_csv->get_column_idx(names_col);
     for (auto &p : group_map)
     {
       LineGraph graph;
+      graph.color = palette[graphs.size()%palette.size()];
       graph.name = names_idx == -1 ? ("Graph " + std::to_string(graphs.size())) : filtered_csv->columns[names_idx][p.second[0]];
       for (int idx : p.second)
       {

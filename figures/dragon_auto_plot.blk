@@ -36,11 +36,17 @@
 
     group_by:s = "tag"            // column name to use for grouping data
     names:s = "tag"               // column name to use for names of graphs
-    labels:s = "config_name"      // column name to use for labels of data points
+    labels:s = "config_name"      // column name to use for labels of data points, remove if you don't want labels
     x_values:s = "model_size(Mb)" // column name to use for x values
     y_values:s = "psnr_average"   // column name to use for y values
 
-    line {color:p4 = 0,0,1,1} 
-    text {color:p4 = 0,0,0,1 font_name:s = "Courier-Bold"}
+    //line colors are set from given palette
+    palette:e_ColorPalette = Set1
+
+    //set line parameters (are set for all graphs created from this data)
+    line {thickness:r = 0.005}  
+
+    //set label text parameters
+    text {color:p4 = 0,0,0,1 font_name:s = "Courier-Bold" font_size:i = 40}
   }
 }
