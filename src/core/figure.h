@@ -137,6 +137,7 @@ namespace LiteFigure
 
     float4 color = float4(1,0,0,1);
     float thickness = 0.01f; //in normalized coordinates (0..1), 0.5f will fill the whole frame body
+    int thickness_pixel = 0; //fixed thickness in pixels, used instead of "float thickness" if set
   };
 
   enum class LineStyle
@@ -157,7 +158,9 @@ namespace LiteFigure
     float2 start = float2(0,0);
     float2 end = float2(1,1);
     float2 style_pattern = float2(1,0); // dash length/dot radius, space length
-    float thickness = 0.01f;
+    float thickness = 0.01f; // in normalized coordinates (0..1)
+    int thickness_pixel = 0; // fixed thickness in pixels, used instead of "float thickness" if set
+  
     bool antialiased = true;
   };
 

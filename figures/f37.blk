@@ -1,0 +1,46 @@
+{
+    type:e_FigureType = Collage
+    frame {
+      pos:i2 = 0, 0
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 1,0,0,1
+      thickness:r = 0.02
+    }
+    frame {
+      pos:i2 = 100, 0
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 0,1,0,1
+      thickness:r = 0.04
+    }
+    frame {
+      pos:i2 = 200, 0
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 0,0,1,1
+      thickness:r = 0.08
+    }
+
+frame {
+      pos:i2 = 0, 100
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 0,1,0,1
+      thickness_pixel:i = 2
+    }
+    frame {
+      pos:i2 = 100, 100
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 0,0,1,1
+      thickness_pixel:i = 4
+    }
+    frame {
+      pos:i2 = 200, 100
+      size:i2 = 100, 100
+      type:e_FigureType = Rectangle
+      color:p4 = 1,0,0,1
+      thickness_pixel:i = 8
+    }
+}

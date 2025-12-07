@@ -93,6 +93,7 @@ namespace LiteFigure
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     thickness = blk->get_double("thickness", thickness);
+    thickness_pixel = blk->get_int("thickness_pixel", 0);
 
     if (size.x < 1 || size.y < 1)
     {
@@ -114,6 +115,7 @@ namespace LiteFigure
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
     thickness = blk->get_double("thickness", thickness);
+    thickness_pixel = blk->get_int("thickness_pixel", 0);
     start = blk->get_vec2("start", start);
     end = blk->get_vec2("end", end);
     antialiased = blk->get_bool("antialiased", antialiased);

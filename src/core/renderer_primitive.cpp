@@ -71,7 +71,8 @@ namespace LiteFigure
 
 	void Renderer::render(const Rectangle &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
-		int border_pixels = std::max<int>(1, round(prim.thickness*std::max(prim.size.x, prim.size.y)));
+		int border_pixels = prim.thickness_pixel > 0 ? prim.thickness_pixel : 
+							std::max<int>(1, round(prim.thickness*std::max(prim.size.x, prim.size.y)));
 		border_pixels = std::min(border_pixels, (std::min(prim.size.x, prim.size.y)+1)/2);
 		float4 c = prim.color;
 		for (int y=instance.pos.y; y<instance.pos.y+border_pixels; y++)
@@ -103,7 +104,7 @@ namespace LiteFigure
 		float x0 = p0.x * w, y0 = p0.y * h;
 		float x1 = p1.x * w, y1 = p1.y * h;
 		float dx = x1 - x0, dy = y1 - y0;
-		float T = prim.thickness * fmax(w, h);
+		float T = prim.thickness_pixel > 0 ? prim.thickness_pixel : prim.thickness * fmax(w, h);
 		int length_pixel = length(float2(dx,dy));
 		int dash_length_pixel = prim.style == LineStyle::Dashed ? prim.style_pattern.x * fmax(w, h) : T;
 		int dash_space_pixel = prim.style_pattern.y * fmax(w, h);

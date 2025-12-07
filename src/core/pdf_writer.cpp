@@ -186,10 +186,12 @@ namespace LiteFigure
 
   bool save_Line_to_pdf(Line *prim, InstanceData inst, struct pdf_doc *pdf)
   {
+    float th_pixel = prim->thickness_pixel > 0 ? prim->thickness_pixel : 
+                                                 prim->thickness*std::max(inst.size.x, inst.size.y);
     int res = pdf_add_line_flip(pdf, nullptr, 
                                 PPP*(inst.pos.x + inst.size.x*prim->start.x), PPP*(inst.pos.y + inst.size.y*prim->start.y),
                                 PPP*(inst.pos.x + inst.size.x*  prim->end.x), PPP*(inst.pos.y + inst.size.y*  prim->end.y),
-                                PPP*prim->thickness*std::max(inst.size.x, inst.size.y),
+                                PPP*th_pixel,
                                 float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)
     {
@@ -214,7 +216,9 @@ namespace LiteFigure
 
   bool save_Rectangle_to_pdf(Rectangle *prim, InstanceData inst, struct pdf_doc *pdf)
   {
-    float s = PPP*prim->thickness*std::max(inst.size.x, inst.size.y);
+    float th_pixel = prim->thickness_pixel > 0 ? prim->thickness_pixel : 
+                                                 prim->thickness*std::max(inst.size.x, inst.size.y);
+    float s = PPP*th_pixel;
     int res = pdf_add_rectangle_flip(pdf, nullptr, PPP*inst.pos.x+s/2, PPP*inst.pos.y+s/2, 
                                      PPP*inst.size.x-s, PPP*inst.size.y-s,s,
                                      float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
