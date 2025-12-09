@@ -445,7 +445,7 @@ namespace LiteFigure
 
       save_block_to_file("saves/temp_1.blk", temp_blk);
     }
-    else if (blk->get_block("figure"))
+    else if (blk->get_block("figure") && (blk->get_id("type") < 0))
     {
       figure_blk = blk->get_block("figure");
     }
