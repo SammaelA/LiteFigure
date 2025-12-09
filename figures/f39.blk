@@ -1,0 +1,68 @@
+{
+    type:e_FigureType = Grid
+    row {
+        image_with_frame {
+            type:e_FigureType = Transform
+            frame {
+                color:p4 = 1,0,0,1
+                thickness_pixel:i = 2        
+            }
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_1.png"
+            }
+        }
+        image_with_two_frames {
+            type:e_FigureType = Transform
+            frame {
+                color:p4 = 0,0,1,1
+                thickness_pixel:i = 1        
+            }
+            figure {
+                type:e_FigureType = Transform
+                frame {
+                    color:p4 = 1,0,0,1
+                    thickness_pixel:i = 2        
+                }
+                figure {
+                    type:e_FigureType = PrimitiveImage
+                    path:s = "images/block_1.png"
+                }
+            }
+        }
+
+        crop_with_frame {
+            type:e_FigureType = Transform
+            size:i2 = 48,48
+            crop:p4 = 0.25,0,0.75,1
+            frame {
+                color:p4 = 1,0,0,1
+                thickness_pixel:i = 2        
+            }
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_1.png"
+            }
+        }
+        crop_with_two_frames {
+            type:e_FigureType = Transform
+            size:i2 = 48,48
+            frame {
+                color:p4 = 0,0,1,1
+                thickness_pixel:i = 1        
+            }
+            figure {
+                type:e_FigureType = Transform
+                crop:p4 = 0.25,0,0.75,1
+                frame {
+                    color:p4 = 1,0,0,1
+                    thickness_pixel:i = 2        
+                }
+                figure {
+                    type:e_FigureType = PrimitiveImage
+                    path:s = "images/block_1.png"
+                }
+            }
+        }
+    }
+}

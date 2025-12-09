@@ -321,12 +321,22 @@ namespace LiteFigure
     if (!is_valid_size(force_size) && is_valid_size(size))
       force_size = size;
 
-    if (!is_valid_size(force_size))
-      force_size = int2(scale * float2(crop.z - crop.x, crop.w - crop.y) * float2(figure->calculateSize()));
+    int2 figure_size = figure->calculateSize();
+    int2 target_size = int2(scale * float2(crop.z - crop.x, crop.w - crop.y) * float2(figure->calculateSize()));
 
-    size = figure->calculateSize(force_size);
+    if (is_valid_size(force_size))
+    {
+      float2 scale = float2(force_size) / float2(target_size);
+      size = int2(std::min(scale.x, scale.y)*float2(target_size)); 
+    }
+    else
+    {
+      size = target_size;
+    }
+    
     if (frame)
       size = frame->calculateSize(size);
+
     return size;
   }
 
@@ -369,7 +379,6 @@ namespace LiteFigure
   void Transform::prepareInstances(int2 pos, std::vector<Instance> &out_instances)
   {
     auto child_type = figure->getType();
-    int2 target_size = figure->size;
     if (child_type == FigureType::PrimitiveImage || child_type == FigureType::Transform)
     {
       float3x3 crop_trans;
@@ -379,9 +388,6 @@ namespace LiteFigure
         float x1 = crop.z;
         float y1 = crop.w;
         crop_trans = float3x3(x1 - x0, 0, x0, 0, y1 - y0, y0, 0, 0, 1);
-        float2 crop_region_size = float2(figure->size) * float2(x1 - x0, y1 - y0);
-        float2 crop_region_scale = crop_region_size / std::max(crop_region_size.x, crop_region_size.y);
-        target_size = int2(float2(size)*crop_region_scale);
       }
       float3x3 rot = float3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
       if (rotation != 0)
@@ -399,7 +405,7 @@ namespace LiteFigure
       float3x3 transform = mirror * rot * crop_trans;
       for (auto &inst : instances_to_transform)
       {
-        inst.prim->size = target_size;
+        inst.prim->size = size;
         inst.data.uv_transform = transform * inst.data.uv_transform;
         out_instances.push_back(inst);
       }
@@ -407,9 +413,6 @@ namespace LiteFigure
 
     if (frame)
     {
-      //printf("size %d %d, pos %d %d\n", size.x, size.y, pos.x, pos.y);
-      //printf("target size %d %d\n", target_size.x, target_size.y);
-      frame->calculateSize(target_size);
       frame->prepareInstances(pos, out_instances);
     }
   }
