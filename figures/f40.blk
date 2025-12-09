@@ -1,0 +1,30 @@
+{
+    type:e_FigureType = Transform
+    frame {
+        color:p4 = 1,0,0,1
+        thickness_pixel:i = 2        
+    }
+    figure {
+        type:e_FigureType = Grid
+        row {
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_1.png"
+            }
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_2.png"
+            }
+        }
+        row {
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_3.png"
+            }
+            figure {
+                type:e_FigureType = PrimitiveImage
+                path:s = "images/block_4.png"
+            }
+        }
+    }
+}

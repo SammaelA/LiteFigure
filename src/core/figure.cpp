@@ -410,6 +410,10 @@ namespace LiteFigure
         out_instances.push_back(inst);
       }
     }
+    else
+    {
+      figure->prepareInstances(pos, out_instances);
+    }
 
     if (frame)
     {
