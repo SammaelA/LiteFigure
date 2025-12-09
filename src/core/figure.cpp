@@ -325,6 +325,8 @@ namespace LiteFigure
       force_size = int2(scale * float2(crop.z - crop.x, crop.w - crop.y) * float2(figure->calculateSize()));
 
     size = figure->calculateSize(force_size);
+    if (frame)
+      size = frame->calculateSize(size);
     return size;
   }
 
@@ -337,30 +339,28 @@ namespace LiteFigure
     mirror_x = blk->get_bool("mirror_x", mirror_x);
     mirror_y = blk->get_bool("mirror_y", mirror_y);
 
-    int figure_block_id = -1;
-    for (int i = 0; i < blk->size(); i++)
+    if (blk->get_block("figure"))
     {
-      Block *fig_blk = blk->get_block(i);
-      if (fig_blk)
-      {
-        if (figure_block_id == -1)
-          figure_block_id = i;
-        else
-        {
-          printf("[Transform::load] only one figure block allowed for transform\n");
-          return false;
-        }
-      }
+      figure = create_figure(blk->get_block("figure"));
     }
-
-    if (figure_block_id == -1)
+    else
     {
       printf("[Transform::load] transform must contain block with figure\n");
       return false;
     }
-    else
+
+    if (blk->get_block("frame"))
     {
-      figure = create_figure(blk->get_block(figure_block_id));
+      Block fig_frame_blk;
+      fig_frame_blk.copy(blk->get_block("frame"));
+      fig_frame_blk.set_ivec2("size", int2(1,1)); //real size is the same as image, it will be set later
+      frame = std::make_shared<Rectangle>();
+      bool frame_loaded = frame->load(&fig_frame_blk);
+      if (!frame_loaded)
+      {
+        printf("[Transform::load] frame failed to load\n");
+        return false;
+      }
     }
 
     return true;
@@ -403,6 +403,14 @@ namespace LiteFigure
         inst.data.uv_transform = transform * inst.data.uv_transform;
         out_instances.push_back(inst);
       }
+    }
+
+    if (frame)
+    {
+      //printf("size %d %d, pos %d %d\n", size.x, size.y, pos.x, pos.y);
+      //printf("target size %d %d\n", target_size.x, target_size.y);
+      frame->calculateSize(target_size);
+      frame->prepareInstances(pos, out_instances);
     }
   }
 

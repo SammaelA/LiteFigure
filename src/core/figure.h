@@ -98,6 +98,7 @@ namespace LiteFigure
     std::vector<Element> elements;
   };
 
+  struct Rectangle;
   struct Transform : public Figure
   {
     virtual FigureType getType() const override { return FigureType::Transform; }
@@ -106,6 +107,7 @@ namespace LiteFigure
     virtual bool load(const Block *blk) override;
 
     FigurePtr figure;
+    std::shared_ptr<Rectangle> frame;
     float4 crop  = float4(0,0,1,1);
     float2 scale = float2(1,1);
     float rotation = 0; // in degrees
