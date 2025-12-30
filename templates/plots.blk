@@ -25,7 +25,7 @@
         x_values:s = "model_size(Mb)" // column name to use for x values
         y_values:s = "psnr_average"   // column name to use for y values
 
-        line {color:p4 = 0,0,1,1} 
+        line {} 
         text {color:p4 = 0,0,0,1}
       }
     }
