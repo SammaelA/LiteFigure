@@ -29,5 +29,73 @@
         text {color:p4 = 0,0,0,1}
       }
     }
+
+    // take data in new LiteRT benchmark format to plot it on the
+    // memory-quality coordinate plane
+    // uses log scale for x values (memory footprint)
+    memory_quality_plot_log
+    {
+      type:e_FigureType = LinePlot
+      size:i2 = 4096,2048
+      x_use_log_scale:b = true
+
+      header { text:s = "Memory-Quality Graph Template" font_size:i = 96 }
+
+      // TODO: fix legend
+      // legend { line_length:r = 0.2f text{font_size:i = 96}}
+
+      x_label { text:s = "Size (MB)"}
+      x_ticks { values:arr = {0.125,0.25,0.5,1,2,4,8,16,32} }
+      x_tick_lines { thickness:r = 0.001 color:p4 = 0.67,0.67,0.67,1}
+
+      y_label { text:s = "PSNR" }
+      y_ticks { values:arr = {20,25,30,35,40,45,50} }
+      y_tick_lines { thickness:r = 0.001 color:p4 = 0.67,0.67,0.67,1}
+
+      // define all graphs creation from a given csv file
+      // several graph/graphs blocks can be present, all
+      // graphs will be put on the plot together
+      graphs {
+        group_by:s = "tag"            // column name to use for grouping data
+        names:s = "tag"               // column name to use for names of graphs
+        labels:s = "config_name"      // column name to use for labels of data points
+        x_values:s = "model_size(Mb)" // column name to use for x values
+        y_values:s = "psnr_average"   // column name to use for y values
+        palette:e_ColorPalette = Set1 // color palette to match Set1 from matplotlib
+
+        line {thickness:r = 0.0025 point_size:r = 0.003} 
+        text {color:p4 = 0,0,0,1 font_size:i = 32}
+              
+        // some filters on input data      
+        data {
+          filter_1 { // exclude meshes
+            column:s = "type"
+            value:s = "MESH"
+            exclude:b = true
+          }
+          filter_2 { // include only experiments on GPU
+            column:s = "backend"
+            value:s = "GPU"
+          }
+          filter_3 { // include only experiments on NVIDIA GPUs
+            column:s = "device"
+            regex:s = ".*NVIDIA.*"
+          }
+          filter_4 { // remove very large and very small models
+            column:s = "model_size(Mb)"
+            range:p2 = 0.1, 64
+          }
+          filter_5 { // remove very bad models
+            column:s = "psnr_average"
+            range:p2 = 20, 100
+          }
+          filter_6 { // include only experiments on GPU
+            column:s = "tag"
+            values:arr = {"LOD_RLPM", "Micromesh", "SBS_tricubic"}
+            exclude:b = true
+          }
+        }
+      }
+    }
   }    
 }
