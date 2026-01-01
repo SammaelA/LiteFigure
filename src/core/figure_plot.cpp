@@ -80,6 +80,8 @@ namespace LiteFigure
 
   bool LineGraph::load(const Block *blk)
   {
+    name = blk->get_string("name", name);
+
     load_line_params(blk->get_block("line"));
     load_text_params(blk->get_block("text"));
     
@@ -249,7 +251,7 @@ namespace LiteFigure
       std::shared_ptr<Text> text = std::make_shared<Text>(default_text);
       if (legend_blk->get_block("text"))
         text->load(legend_blk->get_block("text"));
-      text->text = graphs[i].name;
+      text->text = graph.name;
       text->retain_height = false;
       text->retain_width = false;
 
@@ -375,10 +377,11 @@ namespace LiteFigure
       LineGraph graph;
       graph.color = palette[graphs.size()%palette.size()];
       graph.name = names_idx == -1 ? ("Graph " + std::to_string(graphs.size())) : filtered_csv->columns[names_idx][p.second[0]];
+      graph.labels_from_y_values = blk->get_bool("labels_from_y_values", graph.labels_from_y_values);
       for (int idx : p.second)
       {
         graph.values.push_back(float2(all_x_values[idx], all_y_values[idx]));
-        if (all_labels.size() > 0)
+        if (all_labels.size() > 0 && graph.labels_from_y_values)
           graph.labels_str.push_back(all_labels[idx]);
       }
       graph.load_line_params(blk->get_block("line"));

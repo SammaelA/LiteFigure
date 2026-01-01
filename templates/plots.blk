@@ -41,8 +41,7 @@
 
       header { text:s = "Memory-Quality Graph Template" font_size:i = 96 }
 
-      // TODO: fix legend
-      // legend { line_length:r = 0.2f text{font_size:i = 96}}
+      legend { line_length:r = 0.15f text{font_size:i = 64}}
 
       x_label { text:s = "Size (MB)"}
       x_ticks { values:arr = {0.125,0.25,0.5,1,2,4,8,16,32} }
