@@ -197,9 +197,9 @@ namespace LiteFigure
       return "%.0f";
   }
 
-  float tick_rounding_from_range(float tick, float min, float max)
+  float tick_rounding_from_range(float tick, float2 range)
   {
-    float size = max - min;
+    float size = range.y - range.x;
     if (size < 1e-4f)
       return 1e-7f*round(tick/1e-7f);
     else if (size < 1e-3f)
@@ -400,6 +400,44 @@ namespace LiteFigure
     return true;
   }
 
+  // get the value, returns it's position in given range
+  // allows linear or logarithmic scale
+  float val_to_rel_pos(float val, float2 range, bool log_scale, float log_base = 2.0f)
+  {
+    float v = val;
+    float mn = range.x;
+    float mx = range.y;
+    if (log_scale)
+    {
+      assert(val > 0); 
+      v = std::log(val)/std::log(log_base);
+      mn = std::log(mn)/std::log(log_base);
+      mx = std::log(mx)/std::log(log_base);
+    }
+
+    return (v-mn)/(mx-mn);
+  }
+
+  // inverse of val_to_rel_pos
+  float rel_pos_to_val(float rel_pos, float2 range, bool log_scale, float log_base = 2.0f)
+  {
+    float v = rel_pos;
+    float mn = range.x;
+    float mx = range.y;
+    if (log_scale)
+    {
+      mn = std::log(mn)/std::log(log_base);
+      mx = std::log(mx)/std::log(log_base);
+      printf("rel pos log pos real pos %f %f %f\n", v, v*(mx-mn)+mn, std::pow(log_base, v*(mx-mn)+mn));
+      v = std::pow(log_base, v*(mx-mn)+mn);
+    }
+    else
+    {
+      v = v*(mx-mn)+mn;
+    }
+    return v;
+  }
+
   bool LinePlot::load(const Block *blk)
   {
     constexpr int MAX_TICK_TEXT_LEN = 16;
@@ -482,22 +520,54 @@ namespace LiteFigure
       }
     }
 
+    bool x_use_log_scale = blk->get_bool("x_use_log_scale", false);
+    float x_log_scale_base = blk->get_double("x_log_scale_base", 2.0f);
+
+    bool y_use_log_scale = blk->get_bool("y_use_log_scale", false);
+    float y_log_scale_base = blk->get_double("y_log_scale_base", 2.0f);
+
     //increase range by 5% on each side to make plot look nice
-    x_range.x -= (x_range.y - x_range.x) * 0.05f;
-    x_range.y += (x_range.y - x_range.x) * 0.05f;
-    y_range.x -= (y_range.y - y_range.x) * 0.05f;
-    y_range.y += (y_range.y - y_range.x) * 0.05f;
+    //do similar thing in log scale too
+    if (x_use_log_scale)
+    {
+      x_range.x /= sqrtf(x_log_scale_base);
+      x_range.y *= sqrtf(x_log_scale_base);
+    }
+    else
+    {
+      float range = x_range.y - x_range.x;
+      x_range.x -= range * 0.05f;
+      x_range.y += range* 0.05f;
+    }
+
+    if (y_use_log_scale)
+    {
+      y_range.x /= sqrtf(y_log_scale_base);
+      y_range.y *= sqrtf(y_log_scale_base);
+    }
+    else
+    {
+      float range = y_range.y - y_range.x;
+      y_range.x -= range * 0.05f;
+      y_range.y += range * 0.05f;
+    }
 
     x_range = blk->get_vec2("x_range", x_range);
     y_range = blk->get_vec2("y_range", y_range); 
+
+    if (x_use_log_scale)
+      assert(x_range.x > 0);
+     
+    if (y_use_log_scale)
+      assert(y_range.x > 0);     
 
     //rescale values
     for (auto &graph : graphs)
     {
       for (auto &val : graph.values)
       {
-        val.x = (val.x - x_range.x) / (x_range.y - x_range.x);
-        val.y = 1.0f - (val.y - y_range.x) / (y_range.y - y_range.x);
+        val.x = val_to_rel_pos(val.x, x_range, x_use_log_scale, x_log_scale_base);
+        val.y = 1.0f - val_to_rel_pos(val.y, y_range, y_use_log_scale, y_log_scale_base);
       }
       graph.size = size;
       graph.rebuid();
@@ -520,7 +590,8 @@ namespace LiteFigure
     }
 
     std::string x_tick_format = default_format_from_range(x_range.x, x_range.y);
-    std::vector<float> x_tick_values;
+    std::vector<float> x_tick_values; // in absolute units, values for x ticks (will be written on graph)
+    std::vector<float> x_tick_positions; // from 0 to 1, relative positions of x ticks in the area, covered by graph
     int tick_count = 5;
     if (blk->get_block("x_ticks"))
     {
@@ -529,13 +600,21 @@ namespace LiteFigure
       x_tick_format = x_ticks_blk->get_string("format", x_tick_format);
       tick_count = x_ticks_blk->get_int("count", tick_count);
     }
+
     if (x_tick_values.empty())
     {
-      float step = (x_range.y - x_range.x) / float(tick_count);
       for (int i = 0; i < tick_count; i++)
       {
-        x_tick_values.push_back(tick_rounding_from_range(x_range.x + step * (i+0.5f), x_range.x, x_range.y));
+        float val = rel_pos_to_val((i + 0.5f) / float(tick_count), x_range, x_use_log_scale, x_log_scale_base);
+        float2 rounding_range = x_use_log_scale ? float2(0, val) : x_range;
+        x_tick_values.push_back(tick_rounding_from_range(val, rounding_range));
       }
+    }
+
+    x_tick_positions.resize(x_tick_values.size());
+    for (int i = 0; i < x_tick_values.size(); i++)
+    {
+      x_tick_positions[i] = val_to_rel_pos(x_tick_values[i], x_range, x_use_log_scale, x_log_scale_base);
     }
 
     x_tick_lines.resize(x_tick_values.size());
@@ -546,9 +625,10 @@ namespace LiteFigure
       {
         x_tick_lines[i].load(blk->get_block("x_tick_lines"));
       }
-      x_tick_lines[i].start = float2((x_tick_values[i] - x_range.x) / (x_range.y - x_range.x), 1);
-      x_tick_lines[i].end = float2((x_tick_values[i] - x_range.x) / (x_range.y - x_range.x), 0);
+      x_tick_lines[i].start = float2(x_tick_positions[i], 1);
+      x_tick_lines[i].end   = float2(x_tick_positions[i], 0);
     }
+
     x_ticks.resize(x_tick_values.size());
     int tick_box_size = size.x/x_tick_values.size();
     for (int i = 0; i < x_tick_values.size(); i++)
@@ -585,6 +665,7 @@ namespace LiteFigure
 
     std::string y_tick_format = default_format_from_range(y_range.x, y_range.y);
     std::vector<float> y_tick_values;
+    std::vector<float> y_tick_positions; // from 0 to 1, relative positions of y ticks in the area, covered by graph
     tick_count = 5;
     if (blk->get_block("y_ticks"))
     {
@@ -595,11 +676,18 @@ namespace LiteFigure
     }
     if (y_tick_values.empty())
     {
-      float step = (y_range.y - y_range.x) / float(tick_count);
       for (int i = 0; i < tick_count; i++)
       {
-        y_tick_values.push_back(tick_rounding_from_range(y_range.x + step * (i+0.5f), y_range.x, y_range.y));
+        float val = rel_pos_to_val((i + 0.5f) / float(tick_count), y_range, y_use_log_scale, y_log_scale_base);
+        float2 rounding_range = y_use_log_scale ? float2(0, val) : y_range;
+        y_tick_values.push_back(tick_rounding_from_range(val, rounding_range));
       }
+    }
+
+    y_tick_positions.resize(y_tick_values.size());
+    for (int i = 0; i < y_tick_values.size(); i++)
+    {
+      y_tick_positions[i] = 1-val_to_rel_pos(y_tick_values[i], y_range, y_use_log_scale, y_log_scale_base);
     }
 
     y_tick_lines.resize(y_tick_values.size());
@@ -610,8 +698,8 @@ namespace LiteFigure
       {
         y_tick_lines[i].load(blk->get_block("y_tick_lines"));
       }
-      y_tick_lines[i].start = float2(0, 1-(y_tick_values[i] - y_range.x) / (y_range.y - y_range.x));
-      y_tick_lines[i].end = float2(1, 1-(y_tick_values[i] - y_range.x) / (y_range.y - y_range.x));
+      y_tick_lines[i].start = float2(0, y_tick_positions[i]);
+      y_tick_lines[i].end   = float2(1, y_tick_positions[i]);
     }
     y_ticks.resize(y_tick_values.size());
     tick_box_size = size.y/y_tick_values.size();
@@ -638,7 +726,7 @@ namespace LiteFigure
         continue;
       for (float2 val : graph.values)
       {
-        float y_real = (1-val.y) * (y_range.y - y_range.x) + y_range.x;
+        float y_real = rel_pos_to_val(1-val.y, y_range, y_use_log_scale, y_log_scale_base);
         char buf[MAX_TICK_TEXT_LEN];
         snprintf(buf, MAX_TICK_TEXT_LEN, y_tick_format.c_str(), y_real);
         graph.labels_str.push_back(buf);
@@ -717,7 +805,7 @@ namespace LiteFigure
     int y_ticks_collage_max_w = 0;
     for (int i = 0; i < y_tick_values.size(); i++)
     {
-      int center = size.y * (y_tick_values[i] - y_range.x) / (y_range.y - y_range.x);
+      int center = size.y * (1.0f - y_tick_positions[i]);
       Collage::Element elem;
       elem.pos = int2(0, size.y - center - y_ticks[i].size.y);
       elem.size = y_ticks[i].size;
@@ -753,7 +841,7 @@ namespace LiteFigure
     for (int i = 0; i < x_tick_values.size(); i++)
     {
       int sh = x_ticks[i].size.x/2;
-      int center = size.x * (x_tick_values[i] - x_range.x) / (x_range.y - x_range.x);
+      int center = size.x * x_tick_positions[i];
       Collage::Element elem;
       elem.pos = int2(y_axis_grid_width+center-sh,0);
       elem.size = x_ticks[i].size;
