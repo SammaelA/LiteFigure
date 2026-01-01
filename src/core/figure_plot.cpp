@@ -234,35 +234,24 @@ namespace LiteFigure
     float border_thickness = legend_blk->get_double("border_thickness", 0.01f);
     float4 border_color = legend_blk->get_vec4("border_color", float4(0,0,0,1));
 
-    std::vector<const Block *> graph_blks;
-    for (int i=0;i<blk->size();i++)
-    {
-      if (blk->get_name(i) != "graph" || !blk->get_block(i))
-        continue;
-
-      graph_blks.push_back(blk->get_block(i));
-      //std::string name = graph_blk->get_string("name", "graph_" + std::to_string(graphs.size()));
-    } 
-
     std::shared_ptr<Grid> base_grid = std::make_shared<Grid>();
-    base_grid->rows.resize(graph_blks.size());
-    for (int i=0;i<graph_blks.size();i++)
+    base_grid->rows.resize(graphs.size());
+    for (int i=0;i<graphs.size();i++)
     {
-      std::string name = graph_blks[i]->get_string("name", "Graph " + std::to_string(i));
+      const auto &graph = graphs[i];
       std::shared_ptr<Line> line = std::make_shared<Line>(default_line);
       line->size = int2(1,1);
-      if (graph_blks[i]->get_block("line"))
-        line->load(graph_blks[i]->get_block("line"));
+      line->color = graph.color;
+      line->thickness = graph.thickness;
       line->start = float2(0,0.5f);
       line->end = float2(line_length/(line_length+line_text_gap),0.5f);
+
       std::shared_ptr<Text> text = std::make_shared<Text>(default_text);
-
-      text->text = name;
-      text->retain_height = false;
-      text->retain_width = false;
-
       if (legend_blk->get_block("text"))
         text->load(legend_blk->get_block("text"));
+      text->text = graphs[i].name;
+      text->retain_height = false;
+      text->retain_width = false;
 
       base_grid->rows[i].push_back(line);
       base_grid->rows[i].push_back(text);
@@ -428,7 +417,6 @@ namespace LiteFigure
     {
       mn = std::log(mn)/std::log(log_base);
       mx = std::log(mx)/std::log(log_base);
-      printf("rel pos log pos real pos %f %f %f\n", v, v*(mx-mn)+mn, std::pow(log_base, v*(mx-mn)+mn));
       v = std::pow(log_base, v*(mx-mn)+mn);
     }
     else
