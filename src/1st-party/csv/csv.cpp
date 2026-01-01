@@ -219,6 +219,22 @@ namespace csv
     }
   }
 
+  void FilterRangeMatch::filter(Slice &slice) const
+  {
+    int col_id = slice.data->get_column_idx(column_name);
+    if (col_id == -1)
+      return;
+    for (int row = 0; row < slice.data->row_count; row++)
+    {
+      if (!slice.row_mask[row])
+        continue;
+      slice.row_mask[row] = exclude;
+      double val = std::stod(slice.data->columns[col_id][row]);
+      if (val >= min && val <= max)
+        slice.row_mask[row] = !exclude;
+    }
+  }
+
   std::shared_ptr<Filter> load_filter(const Block *blk)
   {
     bool exclude = blk->get_bool("exclude", false);
@@ -241,8 +257,13 @@ namespace csv
     {
       return std::make_shared<FilterRegexMatch>(column_name, blk->get_string("regex"), exclude);
     }
+    else if (blk->get_id("range") != -1 && blk->get_type("range") == Block::ValueType::VEC2)
+    {
+      float2 range = blk->get_vec2("range");
+      return std::make_shared<FilterRangeMatch>(column_name, range.x, range.y, exclude);
+    }
 
-    fprintf(stderr, "unable to load filter, no value, value list or regex specified\n");
+    fprintf(stderr, "unable to load filter, no range, value, value list or regex specified\n");
     return nullptr;
   }
 

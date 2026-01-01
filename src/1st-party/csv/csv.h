@@ -78,6 +78,19 @@ namespace csv
     std::string regex;
   };
 
+  class FilterRangeMatch : public Filter
+  {
+  public:
+    FilterRangeMatch(const std::string &_column_name, double _min, double _max, bool _exclude = false) : 
+      column_name(_column_name), min(_min), max(_max), exclude(_exclude) {}
+    void filter(Slice &slice) const override;
+  private:
+    bool exclude; // if true, exclude matched rows
+    std::string column_name;
+    double min;
+    double max;
+  };
+
   std::shared_ptr<Table> load_csv(const std::string &filename);
   void save_csv(const std::string &filename, const Table &data, bool in_quotes = true);
   void print_csv(const Table &data, int max_rows = -1);
