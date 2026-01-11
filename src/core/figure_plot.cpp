@@ -874,10 +874,10 @@ namespace LiteFigure
       full_graph_grid->rows[1].push_back(legend_collage);
     }
 
+    const float4 padding = blk->get_vec4("padding", float4(0.025f,0.025f,0.025f,0.025f));
     int2 sz_grid = full_graph_grid->calculateSize();
-    float pad = 0.025f;
-    int2 sz_full = int2(sz_grid.x*(1+2*pad), sz_grid.y*(1+2*pad));
-    int2 pos_plot = int2(sz_grid.x*pad, sz_grid.y*pad);
+    int2 sz_full = int2(sz_grid.x*(1+padding.x+padding.z), sz_grid.y*(1+padding.y+padding.w));
+    int2 pos_plot = int2(sz_grid.x*padding.x, sz_grid.y*padding.y);
 
     full_graph_collage = std::make_shared<Collage>();
     full_graph_collage->elements.resize(2);
