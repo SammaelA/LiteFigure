@@ -341,7 +341,7 @@ namespace LiteFigure
         }
         else
         {
-          printf("Warning: we do not support matching by point numbers\n");
+          //printf("Warning: we do not support matching by point numbers\n");
         }
       }
       else
@@ -358,7 +358,7 @@ namespace LiteFigure
         }
         else
         {
-          printf("Warning: we do not support matching by point numbers\n");
+          //printf("Warning: we do not support matching by point numbers\n");
         }
       }
 

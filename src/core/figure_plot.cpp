@@ -783,7 +783,6 @@ namespace LiteFigure
     {
       int2 legend_size = legend->calculateSize();
       int2 offset = min(int2(legend_pos*float2(size)), size - legend_size - int2(1,1));
-      printf("legend pos %f %f\n", legend_pos.x, legend_pos.y);
       Collage::Element elem;
       elem.pos = offset;
       elem.size = legend_size;

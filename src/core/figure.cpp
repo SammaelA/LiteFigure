@@ -424,7 +424,6 @@ namespace LiteFigure
   std::vector<Instance> prepare_instances(FigurePtr figure)
   {
     int2 actual_size = figure->calculateSize(figure->size);
-    printf("actual size %d %d\n", actual_size.x, actual_size.y);
     std::vector<Instance> instances;
     figure->prepareInstances(int2(0, 0), instances);
     return instances;
@@ -465,7 +464,6 @@ namespace LiteFigure
   {
     Renderer renderer;
     std::vector<Instance> instances = prepare_instances(fig);
-    printf("%d instances, figure size %d %d\n", (int)instances.size(), fig->size.x, fig->size.y);
     LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(fig->size.x, fig->size.y);
 
     for (auto &inst : instances)
