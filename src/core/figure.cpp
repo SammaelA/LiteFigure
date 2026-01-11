@@ -474,16 +474,8 @@ namespace LiteFigure
     return out;
   }
 
-  void create_and_save_figure(const Block &blk, const std::string &filename)
+  void save_figure(FigurePtr fig, const std::string &filename)
   {
-    FigurePtr fig = create_figure_from_blk(&blk);
-
-    if (fig->getType() == FigureType::Unknown)
-    {
-      printf("[create_and_save_figure] top level figure type is unknown, probably invalid blk\n");
-      return;
-    }
-
     std::string ext = filename.substr(filename.find_last_of(".") + 1);
 
     if (ext == "bmp" || ext == "png")
@@ -494,6 +486,42 @@ namespace LiteFigure
     else if (ext == "pdf")
     {
       save_figure_to_pdf(fig, filename);
+    }
+  }
+
+  void create_and_save_figure(const Block &blk, const std::string &filename)
+  {
+    FigurePtr fig = create_figure_from_blk(&blk);
+
+    if (fig->getType() == FigureType::Unknown)
+    {
+      printf("[create_and_save_figure] top level figure type is unknown, probably invalid blk\n");
+      return;
+    }
+
+    save_figure(fig, filename);
+  }
+
+  void create_and_save_multiple_figures(const Block &blk)
+  {
+    uint32_t fig_n = 0;
+    for (int i = 0; i < blk.size(); i++)
+    {
+      if (blk.get_type(i) != Block::ValueType::BLOCK || blk.get_name(i) != "figure")
+        continue;
+
+      Block *fig_blk = blk.get_block(i);
+      std::string filename = fig_blk->get_string("save_path");
+      if (filename == "")
+      {
+        printf("[create_and_save_multiple_figures] figure %d has no save path, using default name\n", fig_n);
+        filename = "fig_" + std::to_string(fig_n) + ".png";
+      }
+
+      FigurePtr fig = create_figure_from_blk(fig_blk);
+      save_figure(fig, filename);
+
+      fig_n++;
     }
   }
 }

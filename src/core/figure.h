@@ -327,6 +327,7 @@ namespace LiteFigure
 
   FigurePtr create_figure_from_blk(const Block *blk);
   LiteImage::Image2D<float4> render_figure_to_image(FigurePtr figure);
+  void create_and_save_multiple_figures(const Block &blk);
   void create_and_save_figure(const Block &blk, const std::string &filename);
   std::vector<Instance> prepare_instances(FigurePtr figure);
   void save_figure_to_pdf(FigurePtr fig, const std::string &filename);

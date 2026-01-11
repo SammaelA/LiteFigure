@@ -88,10 +88,13 @@
             column:s = "psnr_average"
             range:p2 = 20, 100
           }
-          filter_6 { // include only experiments on GPU
+          filter_6 {
             column:s = "tag"
-            values:arr = {"LOD_RLPM", "Micromesh", "SBS_tricubic"}
-            exclude:b = true
+            values:arr = {"SCom DAG", "SCom Tree", "SBS", "NGLOD", "LOD", "N-BVH", "VDB"}
+          }
+          filter_7 { // include only experiments with default render mode
+            column:s = "render_mode"
+            value:s = "default"
           }
         }
       }

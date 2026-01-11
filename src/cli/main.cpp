@@ -20,13 +20,24 @@ int main(int argc, char *argv[])
     return 0;
   }
   
-  if (argc != 3)
+  if (argc == 2)
   {
-    printf("Usage: %s input.blk <output_image>\n", argv[0]);
+    Block blk;
+    load_block_from_file(argv[1], blk);
+    LiteFigure::create_and_save_multiple_figures(blk);
+    return 0;
+  }
+  else if (argc == 3)
+  {
+    Block blk;
+    load_block_from_file(argv[1], blk);
+    LiteFigure::create_and_save_figure(blk, argv[2]);
+    return 0;
+  }
+  {
+    printf("Usage: %s input.blk [<output_image>]\n", argv[0]);
     return 1;
   }
-  Block blk;
-  load_block_from_file(argv[1], blk);
-  LiteFigure::create_and_save_figure(blk, argv[2]);
+
   return 0;
 }
