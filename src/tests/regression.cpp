@@ -96,10 +96,9 @@ namespace LiteFigure
       }
     }
 
-    if (!std::filesystem::exists(failed_tests_dir))
-      std::filesystem::create_directories(failed_tests_dir);
-    else
+    if (std::filesystem::exists(failed_tests_dir))
       std::filesystem::remove_all(failed_tests_dir);
+    std::filesystem::create_directories(failed_tests_dir);
 
     int failed_tests = 0;
     for (int test_i = 0; test_i < test_blks.size(); test_i++)
