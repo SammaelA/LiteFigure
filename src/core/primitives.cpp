@@ -92,6 +92,7 @@ namespace LiteFigure
   {
     size = blk->get_ivec2("size", size);
     color = blk->get_vec4("color", color);
+    region = blk->get_vec4("region", region);
     thickness = blk->get_double("thickness", thickness);
     thickness_pixel = blk->get_int("thickness_pixel", 0);
 

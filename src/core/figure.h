@@ -138,6 +138,7 @@ namespace LiteFigure
     virtual bool load(const Block *blk) override;
 
     float4 color = float4(1,0,0,1);
+    float4 region = float4(0,0,1,1); // (left, top, right, bottom) coordinates of an actual rectangle. Useful for cropping
     float thickness = 0.01f; //in normalized coordinates (0..1), 0.5f will fill the whole frame body
     int thickness_pixel = 0; //fixed thickness in pixels, used instead of "float thickness" if set
   };

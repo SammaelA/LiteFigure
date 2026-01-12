@@ -75,20 +75,23 @@ namespace LiteFigure
 							std::max<int>(1, round(prim.thickness*std::max(prim.size.x, prim.size.y)));
 		border_pixels = std::min(border_pixels, (std::min(prim.size.x, prim.size.y)+1)/2);
 		float4 c = prim.color;
-		for (int y=instance.pos.y; y<instance.pos.y+border_pixels; y++)
-			for (int x=instance.pos.x; x<instance.pos.x+prim.size.x; x++)
+		int2 p0 = instance.pos + int2(prim.region.x*prim.size.x, prim.region.y*prim.size.y);
+		int2 p1 = instance.pos + int2(prim.region.z*prim.size.x, prim.region.w*prim.size.y);
+
+		for (int y=p0.y; y<p0.y+border_pixels; y++)
+			for (int x=p0.x; x<p1.x; x++)
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 
-		for (int y=instance.pos.y+border_pixels; y<instance.pos.y+prim.size.y-border_pixels; y++)
+		for (int y=p0.y+border_pixels; y<p1.y-border_pixels; y++)
 		{
-			for (int x=instance.pos.x; x<instance.pos.x+border_pixels; x++)
+			for (int x=p0.x; x<p0.x+border_pixels; x++)
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
-			for (int x=instance.pos.x+prim.size.x-border_pixels; x<instance.pos.x+prim.size.x; x++)
+			for (int x=p1.x-border_pixels; x<p1.x; x++)
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 		}
 
-		for (int y=instance.pos.y+prim.size.y-border_pixels; y<instance.pos.y+prim.size.y; y++)
-			for (int x=instance.pos.x; x<instance.pos.x+prim.size.x; x++)
+		for (int y=p1.y-border_pixels; y<p1.y; y++)
+			for (int x=p0.x; x<p1.x; x++)
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 	}
 

@@ -219,8 +219,11 @@ namespace LiteFigure
     float th_pixel = prim->thickness_pixel > 0 ? prim->thickness_pixel : 
                                                  prim->thickness*std::max(inst.size.x, inst.size.y);
     float s = PPP*th_pixel;
-    int res = pdf_add_rectangle_flip(pdf, nullptr, PPP*inst.pos.x+s/2, PPP*inst.pos.y+s/2, 
-                                     PPP*inst.size.x-s, PPP*inst.size.y-s,s,
+		int2 p0   = inst.pos + int2(prim->region.x*prim->size.x, prim->region.y*prim->size.y);
+    int2 size = int2((prim->region.z-prim->region.x)*prim->size.x, (prim->region.w-prim->region.y)*prim->size.y);
+
+    int res = pdf_add_rectangle_flip(pdf, nullptr, 
+                                     PPP*p0.x+s/2, PPP*p0.y+s/2, PPP*size.x-s, PPP*size.y-s,s,
                                      float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)
     {
