@@ -543,6 +543,44 @@ namespace LiteFigure
       y_range.y += range * 0.05f;
     }
 
+    //load ticks
+    std::string x_tick_format = default_format_from_range(x_range.x, x_range.y);
+    std::vector<float> x_tick_values; // in absolute units, values for x ticks (will be written on graph)
+    std::vector<float> x_tick_positions; // from 0 to 1, relative positions of x ticks in the area, covered by graph
+    int x_tick_count = 5;
+    if (blk->get_block("x_ticks"))
+    {
+      const Block *x_ticks_blk = blk->get_block("x_ticks");
+      x_ticks_blk->get_arr("values", x_tick_values);
+      x_tick_format = x_ticks_blk->get_string("format", x_tick_format);
+      x_tick_count = x_ticks_blk->get_int("count", x_tick_count);
+    }
+
+    std::string y_tick_format = default_format_from_range(y_range.x, y_range.y);
+    std::vector<float> y_tick_values;
+    std::vector<float> y_tick_positions; // from 0 to 1, relative positions of y ticks in the area, covered by graph
+    int y_tick_count = 5;
+    if (blk->get_block("y_ticks"))
+    {
+      const Block *y_ticks_blk = blk->get_block("y_ticks");
+      y_ticks_blk->get_arr("values", y_tick_values);
+      y_tick_format = y_ticks_blk->get_string("format", y_tick_format);
+      y_tick_count = y_ticks_blk->get_int("count", y_tick_count);
+    }
+
+    //update range including tick values
+    if (x_tick_values.size() > 0)
+    {
+      x_range.x = std::min(x_range.x, *std::min_element(x_tick_values.begin(), x_tick_values.end()));
+      x_range.y = std::max(x_range.y, *std::max_element(x_tick_values.begin(), x_tick_values.end()));
+    }
+    if (y_tick_values.size() > 0)
+    {
+      y_range.x = std::min(y_range.x, *std::min_element(y_tick_values.begin(), y_tick_values.end()));
+      y_range.y = std::max(y_range.y, *std::max_element(y_tick_values.begin(), y_tick_values.end()));
+    }
+
+    // if ranges are explicitly set, use them and discard default ranges
     x_range = blk->get_vec2("x_range", x_range);
     y_range = blk->get_vec2("y_range", y_range); 
 
@@ -580,23 +618,11 @@ namespace LiteFigure
       x_label.load(blk->get_block("x_label"));
     }
 
-    std::string x_tick_format = default_format_from_range(x_range.x, x_range.y);
-    std::vector<float> x_tick_values; // in absolute units, values for x ticks (will be written on graph)
-    std::vector<float> x_tick_positions; // from 0 to 1, relative positions of x ticks in the area, covered by graph
-    int tick_count = 5;
-    if (blk->get_block("x_ticks"))
-    {
-      const Block *x_ticks_blk = blk->get_block("x_ticks");
-      x_ticks_blk->get_arr("values", x_tick_values);
-      x_tick_format = x_ticks_blk->get_string("format", x_tick_format);
-      tick_count = x_ticks_blk->get_int("count", tick_count);
-    }
-
     if (x_tick_values.empty())
     {
-      for (int i = 0; i < tick_count; i++)
+      for (int i = 0; i < x_tick_count; i++)
       {
-        float val = rel_pos_to_val((i + 0.5f) / float(tick_count), x_range, x_use_log_scale, x_log_scale_base);
+        float val = rel_pos_to_val((i + 0.5f) / float(x_tick_count), x_range, x_use_log_scale, x_log_scale_base);
         float2 rounding_range = x_use_log_scale ? float2(0, val) : x_range;
         x_tick_values.push_back(tick_rounding_from_range(val, rounding_range));
       }
@@ -654,22 +680,11 @@ namespace LiteFigure
       y_label.load(blk->get_block("y_label"));
     }
 
-    std::string y_tick_format = default_format_from_range(y_range.x, y_range.y);
-    std::vector<float> y_tick_values;
-    std::vector<float> y_tick_positions; // from 0 to 1, relative positions of y ticks in the area, covered by graph
-    tick_count = 5;
-    if (blk->get_block("y_ticks"))
-    {
-      const Block *y_ticks_blk = blk->get_block("y_ticks");
-      y_ticks_blk->get_arr("values", y_tick_values);
-      y_tick_format = y_ticks_blk->get_string("format", y_tick_format);
-      tick_count = y_ticks_blk->get_int("count", tick_count);
-    }
     if (y_tick_values.empty())
     {
-      for (int i = 0; i < tick_count; i++)
+      for (int i = 0; i < y_tick_count; i++)
       {
-        float val = rel_pos_to_val((i + 0.5f) / float(tick_count), y_range, y_use_log_scale, y_log_scale_base);
+        float val = rel_pos_to_val((i + 0.5f) / float(y_tick_count), y_range, y_use_log_scale, y_log_scale_base);
         float2 rounding_range = y_use_log_scale ? float2(0, val) : y_range;
         y_tick_values.push_back(tick_rounding_from_range(val, rounding_range));
       }
