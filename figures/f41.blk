@@ -1,0 +1,56 @@
+{
+  base_elem {
+  type:e_FigureType = LinePlot
+  size:i2 = 2048,1024
+
+  header { text:s = "Test plot 2" font_size:i = 96 }
+
+  x_label { text:s = "Size (MB)"}
+  y_label { text:s = "PSNR" }
+
+  legend { }
+
+  graph {
+    name:s = "Method 1"
+    line {color:p4 = 0.3,0.3,0.3,1}
+    x_values:arr = {2, 5, 15, 31, 47, 88}
+    y_values:arr = {22,24,26, 28, 30, 32}
+  }
+  graph {
+    name:s = "Method 2"
+    line {color:p4 = 0.5,0.5,0.5,1}
+    x_values:arr = {2, 5, 15, 31, 47, 88}
+    y_values:arr = {24,26, 28, 30, 32, 34}
+  }
+  graph {
+    name:s = "Method 3"
+    line {color:p4 = 0.0,0.3,0.0,1}
+    x_values:arr = {2, 5, 15, 31, 47, 88}
+    y_values:arr = {26, 28, 30, 32, 34, 36}
+  }
+  graph {
+    name:s = "Method 4"
+    line {color:p4 = 0.0,0.6,0.0,1}
+    x_values:arr = {2, 5, 15, 31, 47, 88}
+    y_values:arr = {28, 30, 32, 34, 36, 38}
+  }
+  graph {
+    name:s = "Method 5"
+    line {color:p4 = 0.0,1,0.0,1}
+    x_values:arr = {2, 5, 15, 31, 47, 88}
+    y_values:arr = {30, 32, 34, 36, 38, 40}
+  }
+  }
+
+  figure {
+    type:e_FigureType = Grid
+    row {
+      elem extends base_elem { }
+      elem extends base_elem { y_label_position:e_YLabelPosition = Left}
+    }
+    row {
+      elem extends base_elem { y_label_position:e_YLabelPosition = Top}
+      elem extends base_elem { y_label_position:e_YLabelPosition = None}
+    }
+  }
+}

@@ -8,6 +8,14 @@
 
 namespace LiteFigure
 {
+  REGISTER_ENUM(YLabelPosition,
+          ([]()
+           { return std::vector<std::pair<std::string, unsigned>>{
+             {"None", (unsigned)YLabelPosition::None},
+             {"Left", (unsigned)YLabelPosition::Left},
+             {"Top", (unsigned)YLabelPosition::Top},
+          }; })());
+
 	REGISTER_ENUM(LegendPosition,
 				  ([]()
 				   { return std::vector<std::pair<std::string, unsigned>>{
@@ -679,6 +687,7 @@ namespace LiteFigure
     {
       y_label.load(blk->get_block("y_label"));
     }
+    YLabelPosition y_axis_label_position = (YLabelPosition)blk->get_enum("y_label_position", (uint32_t)YLabelPosition::Left);
 
     if (y_tick_values.empty())
     {
@@ -825,12 +834,14 @@ namespace LiteFigure
 
     std::shared_ptr<Grid> y_axis_grid = std::make_shared<Grid>();
     y_axis_grid->rows.resize(1);
-    y_axis_grid->rows[0].push_back(std::make_shared<Text>(y_label));
-    y_axis_grid->rows[0].push_back(std::make_shared<PrimitiveFill>(y_axis_separator));
+    if (y_axis_label_position == YLabelPosition::Left)
+    {
+      y_axis_grid->rows[0].push_back(std::make_shared<Text>(y_label));
+      y_axis_grid->rows[0].push_back(std::make_shared<PrimitiveFill>(y_axis_separator));
+    }
     y_axis_grid->rows[0].push_back(y_ticks_collage);
     y_axis_grid->rows[0].push_back(std::make_shared<PrimitiveFill>(y_axis_separator));
     int y_axis_grid_width = y_axis_grid->calculateSize().x;
-    y_axis_grid_width = y_axis_grid->calculateSize().x;
 
     std::shared_ptr<Collage> x_ticks_collage = std::make_shared<Collage>();
     x_ticks_collage->elements.resize(x_tick_values.size()+1);    
@@ -863,6 +874,12 @@ namespace LiteFigure
 
     std::shared_ptr<Grid> full_graph_grid = std::make_shared<Grid>();
     full_graph_grid->rows.resize(2);
+    if (y_axis_label_position == YLabelPosition::Top)
+    {
+      y_label.size = int2(-1,header.calculateSize().y - std::min(y_label.font_size, header.font_size)/2);
+      y_label.alignment_y = TextAlignmentY::Bottom;
+      full_graph_grid->rows[0].push_back(std::make_shared<Text>(y_label));
+    }
     full_graph_grid->rows[0].push_back(std::make_shared<Text>(header));
     if (legend_position == LegendPosition::TopLeft)
     {

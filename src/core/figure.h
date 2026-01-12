@@ -271,6 +271,13 @@ namespace LiteFigure
     std::shared_ptr<Collage> line_graph_collage;
   };
 
+  enum class YLabelPosition
+  {
+    None,
+    Left,
+    Top
+  };
+
   enum class LegendPosition
   {
     None,

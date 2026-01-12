@@ -48,6 +48,7 @@
       x_tick_lines { thickness:r = 0.001 color:p4 = 0.67,0.67,0.67,1}
 
       y_label { text:s = "PSNR" }
+      y_label_position:e_YLabelPosition = Top
       y_ticks { values:arr = {20,25,30,35,40,45,50} }
       y_tick_lines { thickness:r = 0.001 color:p4 = 0.67,0.67,0.67,1}
 
