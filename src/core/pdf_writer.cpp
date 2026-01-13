@@ -9,7 +9,7 @@
 namespace LiteFigure
 {
   //Points Per Pixel
-  static constexpr int PPP = 4;
+  static constexpr int PPP = 1;
   int document_height_points = 0;
 
   static inline int tonemap(float x, float a_gammaInv) 
