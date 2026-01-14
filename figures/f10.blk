@@ -1,0 +1,37 @@
+{
+  type:e_FigureType = Grid
+  row {
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/hmap.exr"
+    }
+    elem {
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/hmap.exr"
+      tonemap_range:p2 = 0,1
+    }
+  }
+  row {
+    elem {
+      size:i2 = 512, 512
+      type:e_FigureType = Transform
+      crop:p4 = 0.25,0, 0.5, 0.25
+      figure {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/hmap.exr"
+        filter:e_SamplerFilter = Linear
+      }
+    }
+    elem {
+      size:i2 = 512, 512
+      type:e_FigureType = Transform
+      crop:p4 = 0.25,0, 0.5, 0.25
+      figure {
+        type:e_FigureType = PrimitiveImage
+        path:s = "images/hmap.exr"
+        filter:e_SamplerFilter = Linear
+        tonemap_range:p2 = 0,1
+      }
+    }
+  }
+}

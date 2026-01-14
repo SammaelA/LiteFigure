@@ -1,6 +1,12 @@
 #include "figure.h"
 #include "templates.h"
 #include <cstdio>
+#include <filesystem>
+
+#define TINYEXR_USE_MINIZ      0
+#define TINYEXR_USE_STB_ZLIB   1
+#define TINYEXR_IMPLEMENTATION
+#include "tinyexr.h"
 
 namespace LiteFigure
 {
@@ -20,6 +26,86 @@ namespace LiteFigure
                        {"Border",  (unsigned)LiteImage::Sampler::AddressMode::BORDER},
                        {"MirrorOnce",  (unsigned)LiteImage::Sampler::AddressMode::MIRROR_ONCE},
                    }; })());
+
+  bool load_image(const char *path, const char *ext, float gamma, bool use_tonemap, float2 tonemap_range, 
+                  LiteImage::Image2D<float4> &out)
+  {
+    if (!std::filesystem::exists(path))
+    {
+      printf("[load_image] file '%s' doesn't exist\n", path);
+      return false;
+    }
+    if (!std::filesystem::is_regular_file(path))
+    {
+      printf("[load_image] file '%s' is not a file\n", path);
+      return false;
+    }
+
+    if (strncmp(ext, "exr", 3) == 0)
+    {
+      float* exr_data; // width * height * RGBA
+      int width       = 0;
+      int height      = 0;
+      const char* err = nullptr;
+
+      int ret = LoadEXR(&exr_data, &width, &height, path, &err);
+      if (ret != TINYEXR_SUCCESS) 
+      {
+        if (err) 
+        {
+          printf("[load_image] failed to load image '%s' with TinyEXR: %s\n", path, err);
+          delete err;
+        }
+        else
+        {
+          printf("[load_image] failed to load image '%s' with TinyEXR\n", path); 
+        }
+        return false;
+      }
+
+      out.resize(width, height);
+      for(int y = 0; y < height; y++)
+      {
+        const int offset1 = (height - y - 1) * width;
+        const int offset2 = y * width * 4;
+        memcpy((void*)(out.data() + offset1), (void*)(exr_data + offset2), width * sizeof(float) * 4);
+      }
+      free(exr_data);  
+    }
+    else
+    {
+      out = LiteImage::LoadImage<float4>(path, gamma);
+    }
+    if (out.width() < 1 || out.height() < 1)
+    {
+      printf("[load_image] failed to load image '%s' with LiteImage\n", path);
+      return false;
+    }
+
+    if (use_tonemap)
+    {
+      float4 min_val = out.data()[0];
+      float4 max_val = out.data()[0];
+      for (int i = 1; i < out.width()*out.height(); i++)
+      {
+        min_val = min(min_val, out.data()[i]);
+        max_val = max(max_val, out.data()[i]);
+      }
+
+      max_val = max(max_val, min_val + 1e-9f);
+      float4 range_min = float4(tonemap_range.x, tonemap_range.x, tonemap_range.x, min_val.w);
+      float4 range_max = float4(tonemap_range.y, tonemap_range.y, tonemap_range.y, max_val.w);
+      float4 range_size = range_max - range_min;
+
+      for (int i = 0; i < out.width()*out.height(); i++)
+      {
+        float4 rel_val = (out.data()[i] - min_val) / (max_val - min_val);
+        out.data()[i] = rel_val * range_size + range_min;
+      }
+    }
+
+    return true;
+  }
 
   int2 Primitive::calculateSize(int2 force_size)
   {
@@ -47,7 +133,18 @@ namespace LiteFigure
       printf("[PrimitiveImage::load] path is empty\n");
       return false;
     }
-    image = LiteImage::LoadImage<float4>(path.c_str());
+    std::string ext = path.substr(path.find_last_of('.') + 1);
+    float gamma = blk->get_double("gamma", 2.2f);
+    int tonemap_param_id = blk->get_id("tonemap_range");
+    float2 tonemap_range = float2(0,1);
+    if (tonemap_param_id >= 0 && blk->get_type(tonemap_param_id) == Block::ValueType::VEC2)
+      tonemap_range = blk->get_vec2(tonemap_param_id);
+    else
+      tonemap_param_id = -1;
+
+    bool status = load_image(path.c_str(), ext.c_str(), gamma, tonemap_param_id >=0, tonemap_range, image);
+    if (!status)
+      return false;
 
     //TODO: support images with alpha
     for (int i=0;i<image.height()*image.width();i++)
