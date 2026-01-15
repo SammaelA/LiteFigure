@@ -28,7 +28,7 @@ namespace LiteFigure
                    }; })());
 
   bool load_image(const char *path, const char *ext, float gamma, bool use_tonemap, float2 tonemap_range, 
-                  LiteImage::Image2D<float4> &out)
+                  bool monochrome, LiteImage::Image2D<float4> &out)
   {
     if (!std::filesystem::exists(path))
     {
@@ -82,6 +82,15 @@ namespace LiteFigure
       return false;
     }
 
+    if (monochrome)
+    {
+      for (int i = 1; i < out.width()*out.height(); i++)
+      {
+        float v = out.data()[i].x;
+        out.data()[i] = float4(v,v,v,1);
+      }
+    }
+
     if (use_tonemap)
     {
       float4 min_val = out.data()[0];
@@ -99,8 +108,7 @@ namespace LiteFigure
 
       for (int i = 0; i < out.width()*out.height(); i++)
       {
-        float4 rel_val = (out.data()[i] - min_val) / (max_val - min_val);
-        out.data()[i] = rel_val * range_size + range_min;
+        out.data()[i] = LiteMath::clamp((out.data()[i] - range_min)/range_size, 0.0f, 1.0f);
       }
     }
 
@@ -134,6 +142,7 @@ namespace LiteFigure
       return false;
     }
     std::string ext = path.substr(path.find_last_of('.') + 1);
+    bool monochrome = blk->get_bool("monochrome", false);
     float gamma = blk->get_double("gamma", 2.2f);
     int tonemap_param_id = blk->get_id("tonemap_range");
     float2 tonemap_range = float2(0,1);
@@ -142,7 +151,7 @@ namespace LiteFigure
     else
       tonemap_param_id = -1;
 
-    bool status = load_image(path.c_str(), ext.c_str(), gamma, tonemap_param_id >=0, tonemap_range, image);
+    bool status = load_image(path.c_str(), ext.c_str(), gamma, tonemap_param_id >=0, tonemap_range, monochrome, image);
     if (!status)
       return false;
 
