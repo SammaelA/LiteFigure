@@ -38,9 +38,9 @@ namespace LiteFigure
 
 	void Renderer::render(const PrimitiveImage &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
-		for (int y = 0; y < prim.size.y; y++)
+		for (int y = 0; y < std::min<int>(prim.size.y, out.height() - instance.pos.y); y++)
 		{
-			for (int x = 0; x < prim.size.x; x++)
+			for (int x = 0; x < std::min<int>(prim.size.x, out.width() - instance.pos.x); x++)
 			{
 				float3 uv3 = instance.uv_transform * float3((x+0.5f) / float(prim.size.x), (y+0.5f) / float(prim.size.y), 1);
 				float4 c;
@@ -59,9 +59,9 @@ namespace LiteFigure
 	void Renderer::render(const PrimitiveFill &prim, const InstanceData &instance, LiteImage::Image2D<float4> &out) const
 	{
 		float4 c = prim.color;
-		for (int y = instance.pos.y; y < instance.pos.y + prim.size.y; y++)
+		for (int y = instance.pos.y; y < std::min<int>(out.height(), instance.pos.y + prim.size.y); y++)
 		{
-			for (int x = instance.pos.x; x < instance.pos.x + prim.size.x; x++)
+			for (int x = instance.pos.x; x < std::min<int>(out.width(), instance.pos.x + prim.size.x); x++)
 			{
 				out[uint2(x, y)] = alpha_blend(c, out[uint2(x, y)]);
 			}
