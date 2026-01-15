@@ -74,23 +74,26 @@ namespace LiteFigure
     }
     else
     {
+      constexpr uint32_t BUF_SIZE = 1024;
+      char path_buf[BUF_SIZE];
+
       for (int i = 0; i < test_numbers.size(); i++)
       {
         Block blk;
-        std::string path = blk_dir + "/f" + std::to_string(test_numbers[i]) + ".blk";
-        bool loaded = load_block_from_file(path, blk);
+        snprintf(path_buf, BUF_SIZE, "%s/f%02d.blk", blk_dir.c_str(), test_numbers[i]);
+        bool loaded = load_block_from_file(path_buf, blk);
         if (!loaded)
-          printf("[perform_regression_tests] failed to load test %d (path = %s)\n", i, path.c_str());
+          printf("[perform_regression_tests] failed to load test %d (path = %s)\n", i, path_buf);
         else
         {
-          std::string ref_image_path = images_dir + "/f" + std::to_string(test_numbers[i]) + ".png";
-          if (!recreate_reference_images && !std::filesystem::exists(ref_image_path))
-            printf("[perform_regression_tests] reference image %s does not exist\n", ref_image_path.c_str());
+          snprintf(path_buf, BUF_SIZE, "%s/f%02d.png", images_dir.c_str(), test_numbers[i]);
+          if (!recreate_reference_images && !std::filesystem::exists(path_buf))
+            printf("[perform_regression_tests] reference image %s does not exist\n", path_buf);
           else
           {
             test_blks.emplace_back(new Block());
             test_blks.back()->copy(&blk);
-            ref_image_paths.push_back(ref_image_path);
+            ref_image_paths.push_back(path_buf);
           }
         }
       }
