@@ -96,6 +96,8 @@ namespace LiteFigure
             out.data()[i] = float4(data_png[3 * i] * mul, data_png[3 * i + 1] * mul, data_png[3 * i + 2] * mul, 1);
           else if (channels == 4)
             out.data()[i] = float4(data_png[4 * i] * mul, data_png[4 * i + 1] * mul, data_png[4 * i + 2] * mul, data_png[4 * i + 3] * mul);
+
+          out.data()[i] = float4(powf(out.data()[i].x, gamma), powf(out.data()[i].y, gamma), powf(out.data()[i].z, gamma), out.data()[i].w);
         }
 
         stbi_image_free(data_png);
