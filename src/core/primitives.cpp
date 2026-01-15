@@ -1,5 +1,6 @@
 #include "figure.h"
 #include "templates.h"
+#include "stb_image.h"
 #include <cstdio>
 #include <filesystem>
 
@@ -71,6 +72,34 @@ namespace LiteFigure
         memcpy((void*)(out.data() + offset1), (void*)(exr_data + offset2), width * sizeof(float) * 4);
       }
       free(exr_data);  
+    }
+    else if (strncmp(ext, "png", 3) == 0 || strncmp(ext, "jpg", 3) == 0 || strncmp(ext, "jpeg", 4) == 0)
+    {
+      int w, h, channels;
+      auto *data_png = stbi_load_16(path, &w, &h, &channels, 0);
+      if (!data_png)
+      {
+        printf("[load_image] failed to load image '%s' with stb_image\n", path);
+      }
+      else
+      {
+        out.resize(w, h);
+
+        float mul = 1.0f / 65535.0f;
+        for (int i = 0; i < w * h; i++)
+        {
+          if (channels == 1)
+            out.data()[i] = float4(data_png[i] * mul, data_png[i] * mul, data_png[i] * mul, 1);
+          else if (channels == 2)
+            out.data()[i] = float4(data_png[2 * i] * mul, data_png[2 * i + 1] * mul, 0, 1);
+          else if (channels == 3)
+            out.data()[i] = float4(data_png[3 * i] * mul, data_png[3 * i + 1] * mul, data_png[3 * i + 2] * mul, 1);
+          else if (channels == 4)
+            out.data()[i] = float4(data_png[4 * i] * mul, data_png[4 * i + 1] * mul, data_png[4 * i + 2] * mul, data_png[4 * i + 3] * mul);
+        }
+
+        stbi_image_free(data_png);
+      }
     }
     else
     {
