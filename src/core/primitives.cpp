@@ -29,7 +29,7 @@ namespace LiteFigure
                    }; })());
 
   bool load_image(const char *path, const char *ext, float gamma, bool use_tonemap, float2 tonemap_range, 
-                  bool monochrome, LiteImage::Image2D<float4> &out)
+                  bool monochrome, bool flip_y, LiteImage::Image2D<float4> &out)
   {
     if (!std::filesystem::exists(path))
     {
@@ -67,7 +67,7 @@ namespace LiteFigure
       out.resize(width, height);
       for(int y = 0; y < height; y++)
       {
-        const int offset1 = (height - y - 1) * width;
+        const int offset1 = (flip_y ? (height - y - 1) : y) * width;
         const int offset2 = y * width * 4;
         memcpy((void*)(out.data() + offset1), (void*)(exr_data + offset2), width * sizeof(float) * 4);
       }
@@ -75,6 +75,7 @@ namespace LiteFigure
     }
     else if (strncmp(ext, "png", 3) == 0 || strncmp(ext, "jpg", 3) == 0 || strncmp(ext, "jpeg", 4) == 0)
     {
+      stbi_set_flip_vertically_on_load(flip_y);
       int w, h, channels;
       auto *data_png = stbi_load_16(path, &w, &h, &channels, 0);
       if (!data_png)
@@ -174,6 +175,7 @@ namespace LiteFigure
     }
     std::string ext = path.substr(path.find_last_of('.') + 1);
     bool monochrome = blk->get_bool("monochrome", false);
+    bool flip_y = blk->get_bool("flip_y", false);
     float gamma = blk->get_double("gamma", 2.2f);
     int tonemap_param_id = blk->get_id("tonemap_range");
     float2 tonemap_range = float2(0,1);
@@ -182,7 +184,7 @@ namespace LiteFigure
     else
       tonemap_param_id = -1;
 
-    bool status = load_image(path.c_str(), ext.c_str(), gamma, tonemap_param_id >=0, tonemap_range, monochrome, image);
+    bool status = load_image(path.c_str(), ext.c_str(), gamma, tonemap_param_id >=0, tonemap_range, monochrome, flip_y, image);
     if (!status)
       return false;
 
