@@ -13,6 +13,7 @@ add_definitions(-DUSE_STB_IMAGE)
 
 # Compiler flags for Debug/Release
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_PROFILE "-g --coverage -fPIC -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # Add source directories
