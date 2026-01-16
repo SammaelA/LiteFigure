@@ -1,5 +1,4 @@
 #include "figure.h"
-#include "templates.h"
 #include "renderer.h"
 #include "font.h"
 #include <cstdio>

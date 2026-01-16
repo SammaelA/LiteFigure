@@ -1,5 +1,4 @@
 #include "figure.h"
-#include "templates.h"
 #include "stb_image.h"
 #include <cstdio>
 #include <filesystem>

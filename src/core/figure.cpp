@@ -1,5 +1,4 @@
 #include "figure.h"
-#include "templates.h"
 #include "renderer.h"
 #include <cstdio>
 
@@ -431,24 +430,8 @@ namespace LiteFigure
 
   FigurePtr create_figure_from_blk(const Block *blk)
   {
-    Block temp_blk;
     const Block *figure_blk = nullptr;
-    if (blk->get_block("templates") && blk->get_block("figure"))
-    {
-      const Block *templates_blk = blk->get_block("templates");
-      std::map<std::string, const Block *> templates_lib;
-      for (int i = 0; i < templates_blk->size(); i++)
-      {
-        if (templates_blk->get_block(i))
-          templates_lib[templates_blk->get_name(i)] = templates_blk->get_block(i);
-      }
-      temp_blk.copy(blk->get_block("figure"));
-      instantiate_all_templates(&temp_blk, templates_lib);
-      figure_blk = &temp_blk;
-
-      save_block_to_file("saves/temp_1.blk", temp_blk);
-    }
-    else if (blk->get_block("figure") && (blk->get_id("type") < 0))
+    if (blk->get_block("figure") && (blk->get_id("type") < 0))
     {
       figure_blk = blk->get_block("figure");
     }
