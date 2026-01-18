@@ -252,7 +252,6 @@ namespace LiteFigure
 			Instance inst;
 			inst.prim = &background_fill;
 			inst.data.pos = pos;
-			inst.data.size = size;
 			out_instances.push_back(inst);
 		}
 		for (int i = 0; i < glyphs.size(); i++)
@@ -263,7 +262,6 @@ namespace LiteFigure
 			Instance inst;
 			inst.prim = &glyph;
 			inst.data.pos = glyph_pos;
-			inst.data.size = glyph.size;
 			out_instances.push_back(inst);
 		}
 	}

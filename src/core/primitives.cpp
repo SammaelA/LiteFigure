@@ -158,7 +158,6 @@ namespace LiteFigure
     Instance inst;
     inst.prim = this;
     inst.data.pos = pos;
-    inst.data.size = size;
     
     out_instances.push_back(inst);    
   }

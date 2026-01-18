@@ -114,7 +114,8 @@ namespace LiteFigure
   {
     static int counter = 0;
     //first, render image (it can be cropped, rotated, etc.)
-    LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(inst.size.x, inst.size.y);
+    LiteImage::Image2D<float4> out = LiteImage::Image2D<float4>(prim->size.x, prim->size.y);
+
     Renderer renderer;
     Instance image_inst;
     image_inst.prim = prim;
@@ -126,11 +127,11 @@ namespace LiteFigure
     std::vector<unsigned char> out_RGB8;
     float4_image_to_RGB8_image(out, out_RGB8);
     std::string filename = "tmp/image_" + std::to_string(counter++) + ".png";
-    stbi_write_png(filename.c_str(), inst.size.x, inst.size.y, 3, out_RGB8.data(), inst.size.x*3);
+    stbi_write_png(filename.c_str(), prim->size.x, prim->size.y, 3, out_RGB8.data(), prim->size.x*3);
 
     //then add it to pdf
     int res = pdf_add_image_file_flip(pdf, nullptr, PPP*inst.pos.x, PPP*inst.pos.y, 
-                                      PPP*inst.size.x, PPP*inst.size.y, filename.c_str());
+                                      PPP*prim->size.x, PPP*prim->size.y, filename.c_str());
     if (res < 0)
     {
       fprintf(stderr, "[PDFGen]Error adding image: %d\n", res);
@@ -157,10 +158,10 @@ namespace LiteFigure
   {
     const Font &font = get_font(prim->font_name);
     const TTFSimpleGlyph &glyph = font.glyphs[prim->glyph_id];
-    // printf("size %d %d\n", inst.size.x, inst.size.y);
+    // printf("size %d %d\n", prim->size.x, prim->size.y);
     // printf("font scale %f\n", 1.0f/font.scale);
-    // printf("font size %f %f\n", inst.size.x/(font.scale*(glyph.xMax-glyph.xMin)), 
-    //                             inst.size.y/(font.scale*(glyph.yMax-glyph.yMin)));
+    // printf("font size %f %f\n", prim->size.x/(font.scale*(glyph.xMax-glyph.xMin)), 
+    //                             prim->size.y/(font.scale*(glyph.yMax-glyph.yMin)));
     // printf("glyphs box %d %d %d %d\n", glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax);
     char ch[2];
     ch[0] = prim->character;
@@ -187,10 +188,10 @@ namespace LiteFigure
   bool save_Line_to_pdf(Line *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     float th_pixel = prim->thickness_pixel > 0 ? prim->thickness_pixel : 
-                                                 prim->thickness*std::max(inst.size.x, inst.size.y);
+                                                 prim->thickness*std::max(prim->size.x, prim->size.y);
     int res = pdf_add_line_flip(pdf, nullptr, 
-                                PPP*(inst.pos.x + inst.size.x*prim->start.x), PPP*(inst.pos.y + inst.size.y*prim->start.y),
-                                PPP*(inst.pos.x + inst.size.x*  prim->end.x), PPP*(inst.pos.y + inst.size.y*  prim->end.y),
+                                PPP*(inst.pos.x + prim->size.x*prim->start.x), PPP*(inst.pos.y + prim->size.y*prim->start.y),
+                                PPP*(inst.pos.x + prim->size.x*  prim->end.x), PPP*(inst.pos.y + prim->size.y*  prim->end.y),
                                 PPP*th_pixel,
                                 float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)
@@ -204,7 +205,7 @@ namespace LiteFigure
   bool save_PrimitiveFill_to_pdf(PrimitiveFill *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     int res = pdf_add_filled_rectangle_flip(pdf, nullptr, PPP*inst.pos.x, PPP*inst.pos.y, 
-                                            PPP*inst.size.x, PPP*inst.size.y, 
+                                            PPP*prim->size.x, PPP*prim->size.y, 
                                             float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)
     {
@@ -217,7 +218,7 @@ namespace LiteFigure
   bool save_Rectangle_to_pdf(Rectangle *prim, InstanceData inst, struct pdf_doc *pdf)
   {
     float th_pixel = prim->thickness_pixel > 0 ? prim->thickness_pixel : 
-                                                 prim->thickness*std::max(inst.size.x, inst.size.y);
+                                                 prim->thickness*std::max(prim->size.x, prim->size.y);
     float s = PPP*th_pixel;
 		int2 p0   = inst.pos + int2(prim->region.x*prim->size.x, prim->region.y*prim->size.y);
     int2 size = int2((prim->region.z-prim->region.x)*prim->size.x, (prim->region.w-prim->region.y)*prim->size.y);
@@ -235,9 +236,9 @@ namespace LiteFigure
 
   bool save_Circle_to_pdf(Circle *prim, InstanceData inst, struct pdf_doc *pdf)
   {
-    float center_x = PPP*(inst.pos.x + inst.size.x*prim->center.x);
-    float center_y = PPP*(inst.pos.y + inst.size.y*prim->center.y);
-    float radius = PPP*prim->radius*std::max(inst.size.x, inst.size.y);
+    float center_x = PPP*(inst.pos.x + prim->size.x*prim->center.x);
+    float center_y = PPP*(inst.pos.y + prim->size.y*prim->center.y);
+    float radius = PPP*prim->radius*std::max(prim->size.x, prim->size.y);
     int res = pdf_add_ellipse_flip(pdf, nullptr, center_x, center_y, radius, radius,
                                    float4_to_PDF_color(tonemap(prim->color, 1.0f/2.2f)));
     if (res < 0)

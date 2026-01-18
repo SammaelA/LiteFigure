@@ -230,8 +230,8 @@ namespace LiteFigure
 		const TTFSimpleGlyph &glyph = font.glyphs[prim.glyph_id];
 		// if there is no SDF glyph, or the glyph is too big, render it with bezier
 		if (font.glyphs_sdf[prim.glyph_id].height == 0 || prim.size.y > 3*font.glyphs_sdf[prim.glyph_id].height)
-			render_glyph_bezier(data.pos, data.size, prim.color, glyph, out);
+			render_glyph_bezier(data.pos, prim.size, prim.color, glyph, out);
 		else
-			render_glyph_sdf(data.pos, data.size, prim.color, glyph, font.glyphs_sdf[prim.glyph_id], out);
+			render_glyph_sdf(data.pos, prim.size, prim.color, glyph, font.glyphs_sdf[prim.glyph_id], out);
 	}
 }

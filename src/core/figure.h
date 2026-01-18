@@ -60,8 +60,7 @@ namespace LiteFigure
   struct InstanceData
   {
     int2 pos  = int2(0,0);
-    int2 size = int2(-1,-1);
-    LiteMath::float3x3 uv_transform = LiteMath::float3x3();
+    LiteMath::float3x3 uv_transform = LiteMath::float3x3(); //currently used only to transform images
   };
   struct Instance
   {
