@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+extern "C" STBIWDEF unsigned char *stbi_write_png_to_mem(const unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
+
 namespace LiteFigure
 {
   //Points Per Pixel
@@ -75,11 +77,6 @@ namespace LiteFigure
     }
   }
 
-  int pdf_add_image_file_flip(struct pdf_doc *pdf, struct pdf_object *page, float x, float y, float w, float h, const char *filename)
-  {
-    return pdf_add_image_file(pdf, page, x, document_height_points - y - h, w, h, filename);
-  }
-
   int pdf_add_text_flip(struct pdf_doc *pdf, struct pdf_object *page, const char *text, float size, float xoff, float yoff,
                         uint32_t colour)
   {
@@ -123,15 +120,25 @@ namespace LiteFigure
     image_inst.data.pos = int2(0, 0);
     renderer.render_instance(image_inst, out);
 
-    // then, save to temporary png file. Drop alpha channel
+    // then, save to temporary png memory. Drop alpha channel
     std::vector<unsigned char> out_RGB8;
     float4_image_to_RGB8_image(out, out_RGB8);
-    std::string filename = "tmp/image_" + std::to_string(counter++) + ".png";
-    stbi_write_png(filename.c_str(), prim->size.x, prim->size.y, 3, out_RGB8.data(), prim->size.x*3);
+    int png_file_len = 0;
+    auto *png_mem = stbi_write_png_to_mem(out_RGB8.data(), 0, out.width(), out.height(), 3, &png_file_len);
+    if (png_mem == nullptr || png_file_len == 0)
+    {
+      fprintf(stderr, "[PDFGen]Failed to write png file in memory.\n");
+      if (png_mem)
+        free(png_mem);
+      return false;
+    }
 
     //then add it to pdf
-    int res = pdf_add_image_file_flip(pdf, nullptr, PPP*inst.pos.x, PPP*inst.pos.y, 
-                                      PPP*prim->size.x, PPP*prim->size.y, filename.c_str());
+    int res = pdf_add_image_data(pdf, nullptr, PPP*inst.pos.x, 
+                                 document_height_points - PPP*inst.pos.y - PPP*prim->size.y, 
+                                 PPP*prim->size.x, PPP*prim->size.y, png_mem, png_file_len);
+    free(png_mem);
+
     if (res < 0)
     {
       fprintf(stderr, "[PDFGen]Error adding image: %d\n", res);
@@ -305,13 +312,13 @@ namespace LiteFigure
 
     // temporary fix - use Ghostscript to embed fonts in the PDF
     // TODO: remove this when we have a better solution for embedding fonts
-    char gs_cmds[1024] = {0};
-    sprintf(gs_cmds, "gs -dBATCH -dNOPAUSE -dPDFSETTINGS=/prepress -sDEVICE=pdfwrite -dEmbedAllFonts=true -sOutputFile=%s tmp/tmp.pdf", filename.c_str());
-    int res = system(gs_cmds);
-    if (res == 0)
-      printf("Successfully embedded fonts in %s\n", filename.c_str());
-    else 
-      printf("Failed to embed fonts in %s, gs error code %d\n", filename.c_str(), res);
+    // char gs_cmds[1024] = {0};
+    // sprintf(gs_cmds, "gs -dBATCH -dNOPAUSE -dPDFSETTINGS=/prepress -sDEVICE=pdfwrite -dEmbedAllFonts=true -sOutputFile=%s tmp/tmp.pdf", filename.c_str());
+    // int res = system(gs_cmds);
+    // if (res == 0)
+    //   printf("Successfully embedded fonts in %s\n", filename.c_str());
+    // else 
+    //   printf("Failed to embed fonts in %s, gs error code %d\n", filename.c_str(), res);
     
     pdf_destroy(pdf);
   }
