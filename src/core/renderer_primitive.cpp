@@ -49,7 +49,7 @@ namespace LiteFigure
 				else if (prim.sampler.addressV == LiteImage::Sampler::AddressMode::BORDER && (uv3.y <= 0 || uv3.y >= 1))
 					c = prim.sampler.borderColor;
 				else
-					c = prim.image.sample(prim.sampler, float2(uv3.x, uv3.y));
+					c = prim.image->sample(prim.sampler, float2(uv3.x, uv3.y));
 				uint2 pixel = uint2(x + instance.pos.x, y + instance.pos.y);
 				out[pixel] = alpha_blend(c, out[pixel]);
 			}

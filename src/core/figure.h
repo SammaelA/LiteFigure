@@ -120,7 +120,7 @@ namespace LiteFigure
     virtual bool load(const Block *blk) override;
 
     LiteImage::Sampler sampler;
-    LiteImage::Image2D<float4> image;
+    const LiteImage::Image2D<float4> *image = nullptr;
   };
 
   struct PrimitiveFill : public Primitive
