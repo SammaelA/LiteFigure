@@ -186,10 +186,6 @@ namespace LiteFigure
     if (!status)
       return false;
 
-    //TODO: support images with alpha
-    for (int i=0;i<image.height()*image.width();i++)
-      image.data()[i].w = 1.0f;
-
     if (image.width() < 1 || image.height() < 1)
     {
       printf("[PrimitiveImage::load] image is invalid\n");

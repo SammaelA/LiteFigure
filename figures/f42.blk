@@ -1,0 +1,22 @@
+{
+    type:e_FigureType = Collage
+    size:i2 = 512, 512
+    elem {
+      pos:i2 = 100, 100
+      size:i2 = 256, 256
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/sh_15232.png"
+    }
+    elem {
+      pos:i2 = 100, 200
+      size:i2 = 256, 256
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/sh_33971.png"
+    }
+    elem {
+      pos:i2 = 200, 100
+      size:i2 = 256, 256
+      type:e_FigureType = PrimitiveImage
+      path:s = "images/sh_15232.png"
+    }
+}
