@@ -203,23 +203,19 @@ namespace LiteFigure
 
 		if (retain_height && alignment_y != TextAlignmentY::Top)
 		{
-			// int line_start = 0;
-			// for (int l_id=0;l_id<line_ends.size();l_id++)
-			{
-				int2 text_box_size = int2(0, 0);
-				for (int i = 0; i < glyphs.size(); i++)
-					text_box_size = max(text_box_size, glyph_positions[i] + glyphs[i].size);
+			int2 text_box_size = int2(0, 0);
+			for (int i = 0; i < glyphs.size(); i++)
+				text_box_size = max(text_box_size, glyph_positions[i] + glyphs[i].size);
 
-				int gap = proper_size.y - text_box_size.y;
-				int shift = 0;
-				if (alignment_y == TextAlignmentY::Bottom)
-					shift = gap;
-				else if (alignment_y == TextAlignmentY::Center)
-					shift = gap / 2;
+			int gap = proper_size.y - text_box_size.y;
+			int shift = 0;
+			if (alignment_y == TextAlignmentY::Bottom)
+				shift = gap;
+			else if (alignment_y == TextAlignmentY::Center)
+				shift = gap / 2;
 
-				for (int i = 0; i < glyphs.size(); i++)
-					glyph_positions[i].y += shift;
-			}
+			for (int i = 0; i < glyphs.size(); i++)
+				glyph_positions[i].y += shift;
 		}
 
 		return proper_size;

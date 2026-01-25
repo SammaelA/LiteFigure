@@ -323,10 +323,6 @@ namespace LiteFigure
     std::vector<LineGraph> graphs;
 
     std::shared_ptr<Collage> full_graph_collage;
-    //std::vector<Text> values;
-    //PrimitiveFill legend_box;
-    //std::vector<Text> legend_labels;
-    //std::vector<Line> legend_lines;
   };
 
   static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }
