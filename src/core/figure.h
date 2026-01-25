@@ -23,7 +23,8 @@ namespace LiteFigure
     Glyph,
     LinePlot,
     LineGraph,
-    Rectangle
+    Rectangle,
+    CloseUpCollage
   };
   
   struct Instance;
@@ -323,6 +324,38 @@ namespace LiteFigure
     std::vector<LineGraph> graphs;
 
     std::shared_ptr<Collage> full_graph_collage;
+  };
+
+  enum class ElementPosition
+  {
+    None,
+    Left,
+    Right,
+    Top,
+    Bottom,
+    Center,
+    Manual,
+  };
+
+  struct CloseUpCollage : public Figure
+  {
+    virtual bool load(const Block *blk) override;
+    virtual FigureType getType() const override 
+    { 
+      return FigureType::CloseUpCollage; 
+    }
+    virtual void prepareInstances(int2 pos, std::vector<Instance> &out_instances) override
+    {
+      m_figure->prepareInstances(pos, out_instances);
+    }
+    virtual int2 calculateSize(int2 force_size = int2(-1,-1)) override
+    {
+      size = m_figure->calculateSize(force_size);
+      return size;
+    }
+
+  private:
+    FigurePtr m_figure;
   };
 
   static bool is_valid_size(int2 size) { return size.x > 0 && size.y > 0; }

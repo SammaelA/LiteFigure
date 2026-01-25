@@ -21,6 +21,7 @@ namespace LiteFigure
                        {"LinePlot", (unsigned)FigureType::LinePlot},
                        {"LineGraph", (unsigned)FigureType::LineGraph},
                        {"Rectangle", (unsigned)FigureType::Rectangle},
+                       {"CloseUpCollage", (unsigned)FigureType::CloseUpCollage},
                    }; })());
 
   REGISTER_ENUM(LineStyle,
@@ -29,6 +30,18 @@ namespace LiteFigure
                        {"Solid", (unsigned)LineStyle::Solid},
                        {"Dashed", (unsigned)LineStyle::Dashed},
                        {"Dotted", (unsigned)LineStyle::Dotted},
+                   }; })());
+
+  REGISTER_ENUM(ElementPosition,
+                ([]()
+                 { return std::vector<std::pair<std::string, unsigned>>{
+                       {"None", (unsigned)ElementPosition::None},
+                       {"Left", (unsigned)ElementPosition::Left},
+                       {"Right", (unsigned)ElementPosition::Right},
+                       {"Top", (unsigned)ElementPosition::Top},
+                       {"Bottom", (unsigned)ElementPosition::Bottom},
+                       {"Center", (unsigned)ElementPosition::Center},
+                       {"Manual", (unsigned)ElementPosition::Manual},
                    }; })());
 
   FigurePtr create_error_figure_dummy()
@@ -86,6 +99,9 @@ namespace LiteFigure
       break;
     case FigureType::Rectangle:
       fig = std::make_shared<Rectangle>();
+      break;
+    case FigureType::CloseUpCollage:
+      fig = std::make_shared<CloseUpCollage>();
       break;
     default:
       printf("[create_figure] unsupported figure type %d\n", (int)blk->get_enum("type", (unsigned)FigureType::Unknown));

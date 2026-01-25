@@ -1,0 +1,62 @@
+{
+  base_elem
+  {
+    type:e_FigureType = CloseUpCollage
+
+    //collage size (optional)
+    size:i2 = 1279, 1024
+
+    //crop for the base (full) image, defaults to 0,0,1,1
+    base_crop:p4 = 0,0,1,1
+
+    //image used for collage
+    image {
+      path:s = "images/Bunny.png"
+    }
+
+    //block for crop region frame parameters (optional)
+    frame { }
+
+    //text block (optional)
+    text {
+      text:s = "Bunny\nReference"
+    }
+
+    //crop regions, named crop_1, crop_2, etc.
+    crop_1 {
+      //where to put this crop region (default is Manual, which require explicitly setting pos:i2 and size:i2)
+      position:e_ElementPosition = Right
+
+      //pos size of the crop region (optional, can be deduced from position)
+      //pos:i2 = 0, 0
+      //size:i2 = 512,512
+
+      //crop (relative to the base_crop)
+      crop:p4 = 0.3,0.3,0.5,0.5
+
+      //block for crop region frame parameters (optional)
+      frame { color:p4 = 1,0.5,0,1}
+    }
+    crop_2 {
+      position:e_ElementPosition = Right
+      crop:p4 = 0.3,0.3,0.4,0.4
+      frame { color:p4 = 0,1,1,1}
+    }
+    crop_3 {
+      position:e_ElementPosition = Right
+      crop:p4 = 0.3,0.4,0.4,0.6
+      frame { color:p4 = 0,0,1,1}
+    }
+  }
+
+  figure
+  {
+    type:e_FigureType = Grid
+    row {
+      elem extends base_elem { }
+    }
+    row {
+      elem extends base_elem { }
+    }
+  }
+}
