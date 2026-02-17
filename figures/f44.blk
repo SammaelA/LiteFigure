@@ -1,0 +1,87 @@
+{
+  base_elem
+  {
+    type:e_FigureType = CloseUpCollage
+
+    //crop for the base (full) image, defaults to 0,0,1,1
+    base_crop:p4 = 0,0,1,1
+
+    //image used for collage
+    image {
+      size:i2 = 512,512
+      path:s = "images/Bunny.png"
+    }
+
+    //block for crop region frame parameters (optional)
+    frame { }
+
+    //text block (optional)
+    text {
+      text:s = "Bunny\nReference"
+    }
+
+    //crop regions, named crop_1, crop_2, etc.
+    crop_1 {
+      position:e_ElementPosition = Right
+      crop:p4 = 0.3,0.3,0.5,0.5
+      frame { color:p4 = 1,0.5,0,1}
+    }
+    crop_2 {
+      position:e_ElementPosition = Right
+      crop:p4 = 0.3,0.3,0.4,0.4
+      frame { color:p4 = 0,1,1,1}
+    }
+    crop_3 {
+      position:e_ElementPosition = Right
+      crop:p4 = 0.3,0.4,0.4,0.6
+      frame { color:p4 = 0,0,1,1}
+    }
+  }
+
+  figure
+  {
+    type:e_FigureType = Grid
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Right}
+        crop_2 {position:e_ElementPosition = Right}
+        crop_3 {position:e_ElementPosition = Right}
+      }
+    }
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Bottom}
+        crop_2 {position:e_ElementPosition = Bottom}
+        crop_3 {position:e_ElementPosition = Right}
+      }
+    }
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Bottom}
+        crop_2 {position:e_ElementPosition = Bottom}
+        crop_3 {position:e_ElementPosition = Bottom}
+      }
+    }
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Top}
+        crop_2 {position:e_ElementPosition = Top}
+        crop_3 {position:e_ElementPosition = Top}
+      }
+    }
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Left}
+        crop_2 {position:e_ElementPosition = Left}
+        crop_3 {position:e_ElementPosition = Left}
+      }
+    }
+    row {
+      elem extends base_elem {    
+        crop_1 {position:e_ElementPosition = Top}
+        crop_2 {position:e_ElementPosition = Top}
+        crop_3 {position:e_ElementPosition = Left}
+      }
+    }
+  }
+}

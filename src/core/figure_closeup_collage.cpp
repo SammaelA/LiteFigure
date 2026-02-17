@@ -7,9 +7,10 @@ namespace LiteFigure
 {
   bool position_is_supported(ElementPosition pos)
   {
-    return (pos == ElementPosition::Right)||
+    return (pos == ElementPosition::Right)  ||
+           (pos == ElementPosition::Left)   ||
            (pos == ElementPosition::Bottom) ||
-           (pos == ElementPosition::Manual);
+           (pos == ElementPosition::Top);
   }
 
   bool create_crop_frame(int2 size, int2 base_image_size, float default_frame_thickness, float4 default_frame_color, const Block *blk, 
@@ -144,15 +145,15 @@ namespace LiteFigure
       crops_by_position[ep].push_back(crop_blk);
     }
 
-    auto main_grid = std::make_shared<Grid>();
-    main_grid->rows.emplace_back();
-    main_grid->rows[0].push_back(main_image_collage);
-
-    //load crops to main grid
-    if (crops_by_position[ElementPosition::Right].size() > 0)
+    std::unordered_map<ElementPosition,std::shared_ptr<Grid>> crop_grids;
+    for (auto &[position, crops] : crops_by_position)
     {
+      bool x_step = position == ElementPosition::Right || position == ElementPosition::Left;
+
       auto crop_grid = std::make_shared<Grid>();
-      for (auto &crop_blk : crops_by_position[ElementPosition::Right])
+      crop_grid->rows.resize(x_step ? crops.size() : 1);
+      uint32_t row_n = 0;
+      for (auto &crop_blk : crops)
       {
         float4 crop_rel = crop_blk->get_vec4("crop", float4(0,0,1,1));
         float2 bc_p = float2(base_crop.x, base_crop.y);
@@ -179,7 +180,7 @@ namespace LiteFigure
           create_crop_frame(sc_transform_size, base_image_size, default_frame_thickness, default_frame_color, crop_blk, sc_frame);
           sc_collage->elements.push_back(Collage::Element(int2(0,0), sc_transform_size, sc_frame));
 
-          //frame in plase where it was cropped
+          //frame in place where it was cropped
           int2 from_frame_pos  = int2(crop_rel.x*base_image_size.x, crop_rel.y*base_image_size.y);
           int2 from_frame_size = int2((crop_rel.z-crop_rel.x)*base_image_size.x, (crop_rel.w-crop_rel.y)*base_image_size.y);
           auto from_frame = std::make_shared<Rectangle>();
@@ -187,16 +188,27 @@ namespace LiteFigure
           main_image_collage->elements.push_back(Collage::Element(from_frame_pos, from_frame_size, from_frame));
         }
 
-        crop_grid->rows.emplace_back();
-        crop_grid->rows.back().push_back(sc_collage);
+        if (x_step)
+        {
+          crop_grid->rows[row_n].push_back(sc_collage);
+          row_n++;
+        }
+        else
+        {
+          crop_grid->rows[0].push_back(sc_collage);
+        }
       }
+
       int2 max_size = int2(1,1);
       for (auto &row : crop_grid->rows)
       {
         for (auto &elem : row)
         {
           int2 size = elem->calculateSize();
-          max_size.x = std::max(max_size.x, size.x);
+          if (x_step)
+            max_size.x = std::max(max_size.x, size.x);
+          else
+            max_size.y = std::max(max_size.y, size.y);
         }
       }
       for (auto &row : crop_grid->rows)
@@ -211,10 +223,34 @@ namespace LiteFigure
       }
 
       int2 full_size = crop_grid->calculateSize();
-      float ratio = float(full_size.x)/full_size.y;
-      int2 target_size = int2(ratio*base_image_size.x, base_image_size.y);
+      float ratio = x_step ? float(base_image_size.y)/full_size.y : float(base_image_size.x)/full_size.x;
+      int2 target_size = int2(ratio*full_size.x, ratio*full_size.y);
       crop_grid->calculateSize(target_size);
-      main_grid->rows[0].push_back(crop_grid);
+      crop_grids[position] = crop_grid;
+    }
+
+    int2 main_image_size = main_image_collage->calculateSize();
+    auto main_grid = std::make_shared<Grid>();
+
+    if (crop_grids.find(ElementPosition::Top) != crop_grids.end())
+    {
+      //TODO: if left crop is present, insert fill
+      main_grid->rows.emplace_back();
+      main_grid->rows.back().push_back(crop_grids[ElementPosition::Top]);
+    }
+
+    main_grid->rows.emplace_back();
+    if (crop_grids.find(ElementPosition::Left) != crop_grids.end())
+      main_grid->rows.back().push_back(crop_grids[ElementPosition::Left]);
+    main_grid->rows.back().push_back(main_image_collage);
+    if (crop_grids.find(ElementPosition::Right) != crop_grids.end())
+      main_grid->rows.back().push_back(crop_grids[ElementPosition::Right]);
+    
+    if (crop_grids.find(ElementPosition::Bottom) != crop_grids.end())
+    {
+      //TODO: if left crop is present, insert fill
+      main_grid->rows.emplace_back();
+      main_grid->rows.back().push_back(crop_grids[ElementPosition::Bottom]);
     }
 
     main_grid->size = blk->get_ivec2("size");

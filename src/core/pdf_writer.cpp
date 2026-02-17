@@ -312,13 +312,13 @@ namespace LiteFigure
 
     // temporary fix - use Ghostscript to embed fonts in the PDF
     // TODO: remove this when we have a better solution for embedding fonts
-    // char gs_cmds[1024] = {0};
-    // sprintf(gs_cmds, "gs -dBATCH -dNOPAUSE -dPDFSETTINGS=/prepress -sDEVICE=pdfwrite -dEmbedAllFonts=true -sOutputFile=%s tmp/tmp.pdf", filename.c_str());
-    // int res = system(gs_cmds);
-    // if (res == 0)
-    //   printf("Successfully embedded fonts in %s\n", filename.c_str());
-    // else 
-    //   printf("Failed to embed fonts in %s, gs error code %d\n", filename.c_str(), res);
+    char gs_cmds[1024] = {0};
+    sprintf(gs_cmds, "gs -dBATCH -dNOPAUSE -dPDFSETTINGS=/prepress -sDEVICE=pdfwrite -dEmbedAllFonts=true -sOutputFile=%s tmp/tmp.pdf", filename.c_str());
+    int res = system(gs_cmds);
+    if (res == 0)
+      printf("Successfully embedded fonts in %s\n", filename.c_str());
+    else 
+      printf("Failed to embed fonts in %s, gs error code %d\n", filename.c_str(), res);
     
     pdf_destroy(pdf);
   }
