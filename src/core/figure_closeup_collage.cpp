@@ -38,6 +38,45 @@ namespace LiteFigure
     return true;
   }
 
+  std::shared_ptr<Collage> create_crop_collage(const Block *crop_blk, const Block *image_blk, float4 base_crop, int2 base_image_size,
+                                               float default_frame_thickness, float4 default_frame_color, Collage *main_image_collage)
+  {
+    auto sc_collage = std::make_shared<Collage>();
+
+    float4 crop_rel = crop_blk->get_vec4("crop", float4(0, 0, 1, 1));
+    float2 bc_p = float2(base_crop.x, base_crop.y);
+    float2 bc_s = float2(base_crop.z - base_crop.x, base_crop.w - base_crop.y);
+    float4 crop = float4(bc_p.x + bc_s.x * crop_rel.x, bc_p.y + bc_s.y * crop_rel.y,
+                         bc_p.x + bc_s.x * crop_rel.z, bc_p.y + bc_s.y * crop_rel.w);
+
+    Block o_transform_blk;
+    o_transform_blk.set_vec4("crop", crop);
+    o_transform_blk.set_block("figure", image_blk);
+    o_transform_blk.get_block("figure")->set_enum("type", "FigureType", (uint32_t)FigureType::PrimitiveImage);
+
+    auto sc_transform = std::make_shared<Transform>();
+    sc_transform->load(&o_transform_blk);
+    int2 sc_transform_size = sc_transform->calculateSize();
+    sc_collage->elements.push_back(Collage::Element(int2(0, 0), sc_transform_size, sc_transform));
+
+    if (crop_blk->get_block("frame"))
+    {
+      // frame around cropped fragment
+      auto sc_frame = std::make_shared<Rectangle>();
+      create_crop_frame(sc_transform_size, base_image_size, default_frame_thickness, default_frame_color, crop_blk, sc_frame);
+      sc_collage->elements.push_back(Collage::Element(int2(0, 0), sc_transform_size, sc_frame));
+
+      // frame in place where it was cropped
+      int2 from_frame_pos = int2(crop_rel.x * base_image_size.x, crop_rel.y * base_image_size.y);
+      int2 from_frame_size = int2((crop_rel.z - crop_rel.x) * base_image_size.x, (crop_rel.w - crop_rel.y) * base_image_size.y);
+      auto from_frame = std::make_shared<Rectangle>();
+      create_crop_frame(from_frame_size, base_image_size, default_frame_thickness, default_frame_color, crop_blk, from_frame);
+      main_image_collage->elements.push_back(Collage::Element(from_frame_pos, from_frame_size, from_frame));
+    }
+
+    return sc_collage;
+  }
+
   bool CloseUpCollage::load(const Block *blk)
   {
     constexpr int MAX_CROPS_COUNT = 8;
@@ -103,31 +142,7 @@ namespace LiteFigure
       main_image_collage->elements.push_back(Collage::Element(int2(0,0), base_image_size, main_frame));
     }
 
-    //add text if it is set
-    if (blk->get_block("text"))
-    {
-      int default_font_size = std::min(base_image_size.x, base_image_size.y) * default_font_size_mult;
-      int2 pos = int2(default_font_size / 8 + 1);
-      int2 size = int2(-1, -1); //text size defined by it's glyphs
-
-      Block o_text_blk;
-      o_text_blk.set_int("font_size", default_font_size);
-      o_text_blk.set_vec4("color", default_font_color);
-
-      //add additional parameters from block and override defaults
-      o_text_blk.add_detalization(*blk->get_block("text"));
-
-      auto main_text = std::make_shared<Text>();
-      bool main_text_loaded = main_text->load(&o_text_blk);
-      if (!main_text_loaded)
-      {
-        fprintf(stderr, "[CloseUpCollage::load] ERROR: failed to load main text\n");
-        return false;
-      }
-      main_image_collage->elements.push_back(Collage::Element(pos, size, main_text));
-    }
-
-    //add crops to map
+    //place crops on main image (ones with manual position), put all others to the map to determine layout later
     std::unordered_map<ElementPosition, std::vector<const Block *>> crops_by_position;
     for (int crop_n=0; crop_n<MAX_CROPS_COUNT; crop_n++)
     {
@@ -136,13 +151,23 @@ namespace LiteFigure
         continue;
       
       ElementPosition ep = (ElementPosition)crop_blk->get_enum("position", (uint32_t)ElementPosition::Manual);
-      if (!position_is_supported(ep))
+      if (ep == ElementPosition::Manual)
+      {
+        int2 pos = crop_blk->get_ivec2("pos", int2(0,0));
+        int2 size = crop_blk->get_ivec2("size", int2(-1,-1));
+        auto sc_collage = create_crop_collage(crop_blk, image_blk, base_crop, base_image_size, default_frame_thickness, 
+                                              default_frame_color, main_image_collage.get());
+        main_image_collage->elements.push_back(Collage::Element(pos, size, sc_collage));
+      }
+      else if (position_is_supported(ep))
+      {
+        crops_by_position[ep].push_back(crop_blk);
+      }
+      else
       {
         fprintf(stderr, "[CloseUpCollage::load] ERROR:Crop position %d is not supported\n", (int)ep);
         return false;
       }
-
-      crops_by_position[ep].push_back(crop_blk);
     }
 
     std::unordered_map<ElementPosition,std::shared_ptr<Grid>> crop_grids;
@@ -155,38 +180,8 @@ namespace LiteFigure
       uint32_t row_n = 0;
       for (auto &crop_blk : crops)
       {
-        float4 crop_rel = crop_blk->get_vec4("crop", float4(0,0,1,1));
-        float2 bc_p = float2(base_crop.x, base_crop.y);
-        float2 bc_s = float2(base_crop.z-base_crop.x, base_crop.w-base_crop.y);
-        float4 crop = float4(bc_p.x + bc_s.x*crop_rel.x, bc_p.y + bc_s.y*crop_rel.y,
-                             bc_p.x + bc_s.x*crop_rel.z, bc_p.y + bc_s.y*crop_rel.w);
-        
-        auto sc_collage = std::make_shared<Collage>();
-
-        Block o_transform_blk;
-        o_transform_blk.set_vec4("crop", crop);
-        o_transform_blk.set_block("figure", image_blk);
-        o_transform_blk.get_block("figure")->set_enum("type", "FigureType", (uint32_t)FigureType::PrimitiveImage);
-
-        auto sc_transform = std::make_shared<Transform>();
-        sc_transform->load(&o_transform_blk);
-        int2 sc_transform_size = sc_transform->calculateSize();
-        sc_collage->elements.push_back(Collage::Element(int2(0,0), sc_transform_size, sc_transform));
-
-        if (crop_blk->get_block("frame"))
-        {
-          //frame around cropped fragment
-          auto sc_frame = std::make_shared<Rectangle>();
-          create_crop_frame(sc_transform_size, base_image_size, default_frame_thickness, default_frame_color, crop_blk, sc_frame);
-          sc_collage->elements.push_back(Collage::Element(int2(0,0), sc_transform_size, sc_frame));
-
-          //frame in place where it was cropped
-          int2 from_frame_pos  = int2(crop_rel.x*base_image_size.x, crop_rel.y*base_image_size.y);
-          int2 from_frame_size = int2((crop_rel.z-crop_rel.x)*base_image_size.x, (crop_rel.w-crop_rel.y)*base_image_size.y);
-          auto from_frame = std::make_shared<Rectangle>();
-          create_crop_frame(from_frame_size, base_image_size, default_frame_thickness, default_frame_color, crop_blk, from_frame);
-          main_image_collage->elements.push_back(Collage::Element(from_frame_pos, from_frame_size, from_frame));
-        }
+        auto sc_collage = create_crop_collage(crop_blk, image_blk, base_crop, base_image_size, default_frame_thickness, 
+                                              default_frame_color, main_image_collage.get());
 
         if (x_step)
         {
@@ -251,6 +246,30 @@ namespace LiteFigure
       //TODO: if left crop is present, insert fill
       main_grid->rows.emplace_back();
       main_grid->rows.back().push_back(crop_grids[ElementPosition::Bottom]);
+    }
+
+    //add text if it is set. Text goes last to be on top
+    if (blk->get_block("text"))
+    {
+      int default_font_size = std::min(base_image_size.x, base_image_size.y) * default_font_size_mult;
+      int2 pos = int2(default_font_size / 8 + 1);
+      int2 size = int2(-1, -1);
+
+      Block o_text_blk;
+      o_text_blk.set_int("font_size", default_font_size);
+      o_text_blk.set_vec4("color", default_font_color);
+
+      //add additional parameters from block and override defaults
+      o_text_blk.add_detalization(*blk->get_block("text"));
+
+      auto main_text = std::make_shared<Text>();
+      bool main_text_loaded = main_text->load(&o_text_blk);
+      if (!main_text_loaded)
+      {
+        fprintf(stderr, "[CloseUpCollage::load] ERROR: failed to load main text\n");
+        return false;
+      }
+      main_image_collage->elements.push_back(Collage::Element(pos, size, main_text));
     }
 
     main_grid->size = blk->get_ivec2("size");
