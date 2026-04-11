@@ -34,6 +34,10 @@ namespace LiteFigure
 		alignment_x = (TextAlignmentX)blk->get_enum("alignment_x", (uint32_t)alignment_x);
 		alignment_y = (TextAlignmentY)blk->get_enum("alignment_y", (uint32_t)alignment_y);
 		verbose = blk->get_bool("verbose", verbose);
+
+		if (is_valid_size(size))
+			size = placeGlyphs();
+
 		return true;
 	}
 
@@ -231,11 +235,11 @@ namespace LiteFigure
 			size = force_size;
 		}
 		if (!equal(prev_size, size) || glyphs.empty())
-		size = placeGlyphs();
+			size = placeGlyphs();
+		
 		if (verbose)
-		{
 			printf("[Text %s] size %d %d font size %d\n", text.c_str(), size.x, size.y, font_size);
-		}
+
 		return size;
 	}
 

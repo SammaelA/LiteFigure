@@ -679,14 +679,14 @@ namespace LiteFigure
       y_axis.load(blk->get_block("y_axis"));
     }
 
+    YLabelPosition y_axis_label_position = (YLabelPosition)blk->get_enum("y_label_position", (uint32_t)YLabelPosition::Left);
     y_label = default_text;
-    y_label.retain_height = true;
+    y_label.retain_height = y_axis_label_position != YLabelPosition::Top;
     y_label.size = int2(1000, size.y);
     if (blk->get_block("y_label"))
     {
       y_label.load(blk->get_block("y_label"));
     }
-    YLabelPosition y_axis_label_position = (YLabelPosition)blk->get_enum("y_label_position", (uint32_t)YLabelPosition::Left);
 
     if (y_tick_values.empty())
     {
@@ -875,8 +875,9 @@ namespace LiteFigure
     full_graph_grid->rows.resize(2);
     if (y_axis_label_position == YLabelPosition::Top)
     {
-      y_label.size = int2(-1,header.calculateSize().y - std::min(y_label.font_size, header.font_size)/2);
       y_label.alignment_y = TextAlignmentY::Bottom;
+      y_label.retain_height = true;
+      y_label.calculateSize(int2(y_label.size.x,header.calculateSize().y - std::min(y_label.font_size, header.font_size)/2));
       full_graph_grid->rows[0].push_back(std::make_shared<Text>(y_label));
     }
     full_graph_grid->rows[0].push_back(std::make_shared<Text>(header));
