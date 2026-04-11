@@ -108,7 +108,7 @@ namespace LiteFigure
     {
       int default_font_size = std::min(base_image_size.x, base_image_size.y) * default_font_size_mult;
       int2 pos = int2(default_font_size / 8 + 1);
-      int2 size = int2(base_image_size.x, -1);
+      int2 size = int2(-1, -1); //text size defined by it's glyphs
 
       Block o_text_blk;
       o_text_blk.set_int("font_size", default_font_size);

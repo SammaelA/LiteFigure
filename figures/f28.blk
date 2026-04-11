@@ -44,7 +44,7 @@
           }
           elem {
             pos:i2 = 0, 0
-            size:i2 = 512, -1
+            size:i2 = -1, -1
             type:e_FigureType = Text
             font_size:i = 64
             text:s = "Reference"
@@ -63,7 +63,7 @@
           }
           elem {
             pos:i2 = 0, 0
-            size:i2 = 512, -1
+            size:i2 = -1, -1
             type:e_FigureType = Text
             font_size:i = 64
             text:s = "Method 1"
@@ -82,7 +82,7 @@
           }
           elem {
             pos:i2 = 0, 0
-            size:i2 = 512, -1
+            size:i2 = -1, -1
             type:e_FigureType = Text
             font_size:i = 64
             text:s = "Method 2"
@@ -101,7 +101,7 @@
           }
           elem {
             pos:i2 = 0, 0
-            size:i2 = 512, -1
+            size:i2 = -1, -1
             type:e_FigureType = Text
             font_size:i = 64
             text:s = "Ours method"

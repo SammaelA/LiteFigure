@@ -144,10 +144,20 @@ namespace LiteFigure
     }
 
     // if element size is not set, set it to figure size
+    // if only one dimension is set, set the other one based on figure aspect ratio
     for (int i = 0; i < elements.size(); i++)
     {
       if (!is_valid_size(elements[i].size))
-        elements[i].size = elements[i].figure->calculateSize();
+      {
+        int2 fig_size = elements[i].figure->calculateSize();
+        float aspect = float(fig_size.x) / std::max(1.0f, float(fig_size.y));
+        if (elements[i].size.x <= 0 && elements[i].size.y > 0)
+          elements[i].size.x = elements[i].size.y * aspect;
+        else if (elements[i].size.x > 0 && elements[i].size.y <= 0)
+          elements[i].size.y = elements[i].size.x / aspect;
+        else 
+          elements[i].size = fig_size;
+      }
     }
 
     // calculate proper size
