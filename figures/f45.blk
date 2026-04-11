@@ -1,0 +1,37 @@
+{
+  base_box
+  {
+    size:i2 = 200, 100
+    type:e_FigureType = Rectangle
+    color:p4 = 1,1,1,1
+    thickness:r = 0.02
+  }
+
+  base_text
+  {
+    size:i2 = 200, 100
+    type:e_FigureType = Text
+    retain_width:b = true
+    retain_height:b = true
+    font_size:i = 25
+    color:p4 = 1,1,1,1
+    text:s = "The quick brown fox"
+    alignment_x:e_TextAlignmentX = Center
+    alignment_y:e_TextAlignmentY = Center
+    font_name:s = "Times-Roman"
+  }
+
+  figure
+  {
+    type:e_FigureType = Collage
+
+    box_1 extends base_box {pos:i2 = 200, 0}
+    text_1 extends base_text {pos:i2 = 200, 0 text:s = "Subtract"}
+
+    box_2 extends base_box {pos:i2 = 0, 300}
+    text_2 extends base_text {pos:i2 = 0, 300 text:s = "Box\n[0.0, 0.0, 0.3, 0.2]"}
+
+    box_3 extends base_box {pos:i2 = 400, 300}
+    text_3 extends base_text {pos:i2 = 400, 300 text:s = "Circle\n[0.0, 0.0, 0.15]"}
+  }
+}
