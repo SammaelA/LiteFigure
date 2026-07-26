@@ -251,16 +251,17 @@ namespace LiteFigure
     //add text if it is set. Text goes last to be on top
     if (blk->get_block("text"))
     {
+      Block *text_settings_blk = blk->get_block("text");
       int default_font_size = std::min(base_image_size.x, base_image_size.y) * default_font_size_mult;
-      int2 pos = int2(default_font_size / 8 + 1);
-      int2 size = int2(-1, -1);
+      int2 pos = text_settings_blk->get_ivec2("pos", int2(default_font_size / 8 + 1));
+      int2 size = text_settings_blk->get_ivec2("size", int2(-1, -1));
 
       Block o_text_blk;
       o_text_blk.set_int("font_size", default_font_size);
       o_text_blk.set_vec4("color", default_font_color);
 
       //add additional parameters from block and override defaults
-      o_text_blk.add_detalization(*blk->get_block("text"));
+      o_text_blk.add_detalization(*text_settings_blk);
 
       auto main_text = std::make_shared<Text>();
       bool main_text_loaded = main_text->load(&o_text_blk);
