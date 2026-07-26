@@ -1,7 +1,7 @@
 #include "figure.h"
 #include "image_cache.h"
 #include <cstdio>
-
+#include <cctype>
 
 namespace LiteFigure
 {
@@ -48,6 +48,8 @@ namespace LiteFigure
       return false;
     }
     std::string ext = path.substr(path.find_last_of('.') + 1);
+    for (auto &c : ext)
+      c = std::tolower(c);
     bool monochrome = blk->get_bool("monochrome", false);
     bool flip_y = blk->get_bool("flip_y", false);
     float gamma = blk->get_double("gamma", 2.2f);
